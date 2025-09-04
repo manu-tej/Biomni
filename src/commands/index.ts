@@ -315,6 +315,53 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     handler: 'handleRefreshTools',
     icon: '$(refresh)',
     priority: 35
+  },
+
+  // === SETTINGS COMMANDS ===
+  {
+    command: 'biomni.settings.manageApiKeys',
+    title: 'Manage API Keys',
+    category: 'Settings',
+    description: 'Add, update, or remove API keys for external services',
+    handler: 'handleManageApiKeys',
+    icon: '$(key)',
+    priority: 30
+  },
+  {
+    command: 'biomni.settings.validateConfiguration',
+    title: 'Validate Configuration',
+    category: 'Settings',
+    description: 'Validate current extension configuration',
+    handler: 'handleValidateConfiguration',
+    icon: '$(verified)',
+    priority: 25
+  },
+  {
+    command: 'biomni.settings.export',
+    title: 'Export Settings',
+    category: 'Settings',
+    description: 'Export current settings to JSON file',
+    handler: 'handleExportSettings',
+    icon: '$(export)',
+    priority: 20
+  },
+  {
+    command: 'biomni.settings.import',
+    title: 'Import Settings',
+    category: 'Settings',
+    description: 'Import settings from JSON file',
+    handler: 'handleImportSettings',
+    icon: '$(cloud-download)',
+    priority: 20
+  },
+  {
+    command: 'biomni.settings.reset',
+    title: 'Reset to Defaults',
+    category: 'Settings',
+    description: 'Reset all settings to default values',
+    handler: 'handleResetSettings',
+    icon: '$(discard)',
+    priority: 15
   }
 ];
 

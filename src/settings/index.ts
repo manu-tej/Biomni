@@ -174,6 +174,27 @@ export class BiomniSettingsService {
   }
 
   /**
+   * Get all API key names (not values)
+   */
+  public async getAllApiKeys(): Promise<Record<string, boolean>> {
+    const keys = await this.context.secrets.get('biomni.apiKeys');
+    const result: Record<string, boolean> = {};
+    
+    if (keys) {
+      try {
+        const keyList = JSON.parse(keys) as string[];
+        for (const key of keyList) {
+          result[key] = true;
+        }
+      } catch (error) {
+        console.error('Failed to parse API key list:', error);
+      }
+    }
+    
+    return result;
+  }
+
+  /**
    * Remove an API key
    */
   public async removeApiKey(keyName: string): Promise<void> {

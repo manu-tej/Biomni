@@ -50,8 +50,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await mcpClient.initialize();
     }
 
-    // Initialize command handlers
-    commandHandlers = new BiomniCommandHandlers(mcpClient);
+    // Initialize command handlers with context
+    commandHandlers = new BiomniCommandHandlers(mcpClient, context);
     
     // Register all Biomni commands
     registerBiomniCommands(context);
@@ -412,89 +412,7 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         void vscode.window.showErrorMessage(`Reset failed: ${errorMessage}`);
       }
-    }),
-
-    vscode.commands.registerCommand('biomni.settings.manageApiKeys', async () => {
-      if (!settingsService) {
-        void vscode.window.showErrorMessage('Settings service not initialized');
-        return;
-      }
-
-      try {
-        const action = await vscode.window.showQuickPick([
-          'Add/Update API Key',
-          'Remove API Key',
-          'List API Keys'
-        ], { placeHolder: 'Select API key action' });
-
-        if (action === 'Add/Update API Key') {
-          const keyName = await vscode.window.showInputBox({
-            prompt: 'Enter API key name (e.g., ncbiApiKey, uniprotApiKey)',
-            placeHolder: 'ncbiApiKey'
-          });
-          
-          if (keyName) {
-            const keyValue = await vscode.window.showInputBox({
-              prompt: `Enter the value for ${keyName}`,
-              password: true
-            });
-            
-            if (keyValue) {
-              await settingsService.storeApiKey(keyName, keyValue);
-              void vscode.window.showInformationMessage(`API key '${keyName}' stored securely`);
-            }
-          }
-        } else if (action === 'Remove API Key') {
-          const keyName = await vscode.window.showInputBox({
-            prompt: 'Enter API key name to remove',
-            placeHolder: 'ncbiApiKey'
-          });
-          
-          if (keyName) {
-            await settingsService.removeApiKey(keyName);
-            void vscode.window.showInformationMessage(`API key '${keyName}' removed`);
-          }
-        } else if (action === 'List API Keys') {
-          const settings = await settingsService.getAllSettings();
-          const apiKeyStatus = [];
-          
-          if (settings.security.apiKeys.ncbiApiKeySet) apiKeyStatus.push('✓ NCBI API Key');
-          if (settings.security.apiKeys.uniprotApiKeySet) apiKeyStatus.push('✓ UniProt API Key'); 
-          if (settings.security.apiKeys.ensemblApiKeySet) apiKeyStatus.push('✓ Ensembl API Key');
-          
-          for (const customKey of settings.security.apiKeys.customApiKeysSet) {
-            apiKeyStatus.push(`✓ ${customKey}`);
-          }
-          
-          if (apiKeyStatus.length === 0) {
-            apiKeyStatus.push('No API keys configured');
-          }
-          
-          void vscode.window.showInformationMessage(
-            `API Keys Status:\n${apiKeyStatus.join('\n')}`
-          );
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        void vscode.window.showErrorMessage(`API key management failed: ${errorMessage}`);
-      }
-    }),
-
-    vscode.commands.registerCommand('biomni.settings.validateConfiguration', async () => {
-      if (!settingsService) {
-        void vscode.window.showErrorMessage('Settings service not initialized');
-        return;
-      }
-
-      try {
-        await settingsService.getAllSettings();
-        // TODO: Implement actual validation logic here
-        void vscode.window.showInformationMessage('Configuration validation completed successfully');
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        void vscode.window.showErrorMessage(`Validation failed: ${errorMessage}`);
-      }
-    }),
+    })
   ];
 
   // Add all commands to context subscriptions

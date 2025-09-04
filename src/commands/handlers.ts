@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { BiomniMcpClient } from '../biomni/mcpClient';
+import { BiomniSettingsService } from '../settings';
 
 /**
  * Command execution result interface
@@ -26,9 +27,11 @@ interface ProgressOptions {
 export class BiomniCommandHandlers {
   private mcpClient: BiomniMcpClient | undefined;
   private outputChannel: vscode.OutputChannel;
+  private context: vscode.ExtensionContext | undefined;
 
-  constructor(mcpClient?: BiomniMcpClient) {
+  constructor(mcpClient?: BiomniMcpClient, context?: vscode.ExtensionContext) {
     this.mcpClient = mcpClient;
+    this.context = context;
     this.outputChannel = vscode.window.createOutputChannel('Biomni');
   }
 
@@ -1281,6 +1284,204 @@ print(result)
       default:
         return {};
     }
+  }
+
+  /**
+   * Handle manage API keys command
+   */
+  async handleManageApiKeys(): Promise<void> {
+    const settingsService = BiomniSettingsService.getInstance(
+      await this.getExtensionContext(),
+      vscode.ConfigurationTarget.Global
+    );
+
+    try {
+      const action = await vscode.window.showQuickPick([
+        'Add/Update API Key',
+        'Remove API Key',
+        'List API Keys'
+      ], { placeHolder: 'Select API key action' });
+
+      if (action === 'Add/Update API Key') {
+        const keyName = await vscode.window.showInputBox({
+          prompt: 'Enter API key name (e.g., ncbiApiKey, uniprotApiKey)',
+          placeHolder: 'ncbiApiKey'
+        });
+        
+        if (keyName) {
+          const keyValue = await vscode.window.showInputBox({
+            prompt: `Enter the value for ${keyName}`,
+            password: true
+          });
+          
+          if (keyValue) {
+            await settingsService.storeApiKey(keyName, keyValue);
+            void vscode.window.showInformationMessage(`API key '${keyName}' stored securely`);
+          }
+        }
+      } else if (action === 'Remove API Key') {
+        const keyName = await vscode.window.showInputBox({
+          prompt: 'Enter API key name to remove',
+          placeHolder: 'ncbiApiKey'
+        });
+        
+        if (keyName) {
+          await settingsService.removeApiKey(keyName);
+          void vscode.window.showInformationMessage(`API key '${keyName}' removed`);
+        }
+      } else if (action === 'List API Keys') {
+        const apiKeys = await settingsService.getAllApiKeys();
+        const apiKeyStatus: string[] = [];
+        
+        if (apiKeys && Object.keys(apiKeys).length > 0) {
+          Object.keys(apiKeys).forEach(key => {
+            apiKeyStatus.push(`✓ ${key}: [configured]`);
+          });
+        } else {
+          apiKeyStatus.push('No API keys configured');
+        }
+        
+        void vscode.window.showInformationMessage(
+          `API Keys Status:\n${apiKeyStatus.join('\n')}`
+        );
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      void vscode.window.showErrorMessage(`API key management failed: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Handle validate configuration command
+   */
+  async handleValidateConfiguration(): Promise<void> {
+    const settingsService = BiomniSettingsService.getInstance(
+      await this.getExtensionContext(),
+      vscode.ConfigurationTarget.Global
+    );
+
+    try {
+      await settingsService.getAllSettings();
+      void vscode.window.showInformationMessage('Configuration validation completed successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      void vscode.window.showErrorMessage(`Validation failed: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Handle export settings command
+   */
+  async handleExportSettings(): Promise<void> {
+    const settingsService = BiomniSettingsService.getInstance(
+      await this.getExtensionContext(),
+      vscode.ConfigurationTarget.Global
+    );
+
+    try {
+      const settings = await settingsService.getAllSettings();
+      const uri = await vscode.window.showSaveDialog({
+        defaultUri: vscode.Uri.file('biomni-settings.json'),
+        filters: {
+          'JSON files': ['json'],
+          'All files': ['*']
+        }
+      });
+
+      if (uri) {
+        const content = JSON.stringify(settings, null, 2);
+        await vscode.workspace.fs.writeFile(uri, Buffer.from(content));
+        void vscode.window.showInformationMessage(`Settings exported to ${uri.fsPath}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      void vscode.window.showErrorMessage(`Export failed: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Handle import settings command
+   */
+  async handleImportSettings(): Promise<void> {
+    const settingsService = BiomniSettingsService.getInstance(
+      await this.getExtensionContext(),
+      vscode.ConfigurationTarget.Global
+    );
+
+    try {
+      const uri = await vscode.window.showOpenDialog({
+        canSelectFiles: true,
+        canSelectFolders: false,
+        canSelectMany: false,
+        filters: {
+          'JSON files': ['json'],
+          'All files': ['*']
+        }
+      });
+
+      if (uri && uri[0]) {
+        const content = await vscode.workspace.fs.readFile(uri[0]);
+        const settings = JSON.parse(content.toString());
+        
+        // Import settings by category
+        for (const [category, categorySettings] of Object.entries(settings)) {
+          if (categorySettings && typeof categorySettings === 'object') {
+            for (const [key, value] of Object.entries(categorySettings)) {
+              await settingsService.updateSetting(category as any, key, value);
+            }
+          }
+        }
+        
+        void vscode.window.showInformationMessage('Settings imported successfully');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      void vscode.window.showErrorMessage(`Import failed: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Handle reset settings command
+   */
+  async handleResetSettings(): Promise<void> {
+    const settingsService = BiomniSettingsService.getInstance(
+      await this.getExtensionContext(),
+      vscode.ConfigurationTarget.Global
+    );
+
+    const confirm = await vscode.window.showWarningMessage(
+      'Are you sure you want to reset all settings to defaults?',
+      'Yes', 'No'
+    );
+
+    if (confirm === 'Yes') {
+      try {
+        await settingsService.resetToDefaults();
+        void vscode.window.showInformationMessage('Settings reset to defaults');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        void vscode.window.showErrorMessage(`Reset failed: ${errorMessage}`);
+      }
+    }
+  }
+
+  /**
+   * Get extension context for settings service
+   */
+  private async getExtensionContext(): Promise<vscode.ExtensionContext> {
+    if (this.context) {
+      return this.context;
+    }
+    
+    // Fallback: try to get from extension
+    const extension = vscode.extensions.getExtension('biomni.biomni-mcp-integration');
+    if (!extension) {
+      throw new Error('Extension context not available');
+    }
+    if (!extension.isActive) {
+      await extension.activate();
+    }
+    return extension.exports?.context || {} as vscode.ExtensionContext;
   }
 
   /**
