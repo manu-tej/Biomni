@@ -968,6 +968,9 @@
     "build": "npm run compile",
     "dev": "npm run watch"
   },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "20.x",

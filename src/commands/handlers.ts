@@ -33,6 +33,13 @@ export class BiomniCommandHandlers {
     this.mcpClient = mcpClient;
     this.context = context;
     this.outputChannel = vscode.window.createOutputChannel('Biomni');
+    // Ensure the output channel is visible in the Output dropdown
+    // by writing an initialization line at construction time.
+    try {
+      this.outputChannel.appendLine('Biomni output initialized');
+    } catch {
+      // noop
+    }
   }
 
   /**

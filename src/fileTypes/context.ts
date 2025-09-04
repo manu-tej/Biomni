@@ -126,16 +126,31 @@ export class BioFileContextProvider {
         this.executeTool(uri, 'intersect')
       ),
 
-      // Generic tools
-      vscode.commands.registerCommand('biomni.file.validate', (uri: vscode.Uri) =>
-        this.validateFile(uri)
-      ),
-      vscode.commands.registerCommand('biomni.file.showInfo', (uri: vscode.Uri) =>
-        this.showFileInfo(uri)
-      ),
-      vscode.commands.registerCommand('biomni.file.suggestTools', (uri: vscode.Uri) =>
-        this.showSmartSuggestions(uri)
-      ),
+      // Generic tools (support invocation from Command Palette without URI)
+      vscode.commands.registerCommand('biomni.file.validate', (uri?: vscode.Uri) => {
+        const targetUri = uri ?? vscode.window.activeTextEditor?.document.uri;
+        if (!targetUri) {
+          void vscode.window.showWarningMessage('No file selected. Open a file or right-click a file to validate.');
+          return;
+        }
+        void this.validateFile(targetUri);
+      }),
+      vscode.commands.registerCommand('biomni.file.showInfo', (uri?: vscode.Uri) => {
+        const targetUri = uri ?? vscode.window.activeTextEditor?.document.uri;
+        if (!targetUri) {
+          void vscode.window.showWarningMessage('No file selected. Open a file or right-click a file to show info.');
+          return;
+        }
+        void this.showFileInfo(targetUri);
+      }),
+      vscode.commands.registerCommand('biomni.file.suggestTools', (uri?: vscode.Uri) => {
+        const targetUri = uri ?? vscode.window.activeTextEditor?.document.uri;
+        if (!targetUri) {
+          void vscode.window.showWarningMessage('No file selected. Open a file or right-click a file for suggestions.');
+          return;
+        }
+        void this.showSmartSuggestions(targetUri);
+      }),
     ];
 
     commands.forEach(command => context.subscriptions.push(command));

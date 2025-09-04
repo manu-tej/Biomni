@@ -18,15 +18,26 @@ let commandHandlers: BiomniCommandHandlers | undefined;
  * Called when the extension is activated
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  console.log('Biomni MCP Integration extension is now active!');
-
-  // CRITICAL: Register commands FIRST - this should never fail
-  // Initialize command handlers with minimal dependencies
-  commandHandlers = new BiomniCommandHandlers(undefined, context);
+  console.log('===== BIOMNI EXTENSION ACTIVATION STARTED =====');
+  console.log('Extension path:', context.extensionPath);
   
-  // Register all commands immediately
-  registerBiomniCommands(context);
-  console.log('Commands registered successfully');
+  try {
+    // CRITICAL: Register commands FIRST - this should never fail
+    // Initialize command handlers with minimal dependencies
+    console.log('Creating command handlers...');
+    commandHandlers = new BiomniCommandHandlers(undefined, context);
+    console.log('Command handlers created');
+    
+    // Register all commands immediately
+    console.log('Starting command registration...');
+    registerBiomniCommands(context);
+    console.log('Command registration complete');
+  } catch (error) {
+    console.error('CRITICAL: Failed to register commands:', error);
+    void vscode.window.showErrorMessage(`Extension activation failed: ${error}`);
+    // Don't continue if command registration fails
+    return;
+  }
 
   // Now try to initialize other services (these can fail without breaking commands)
   try {
@@ -78,11 +89,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Failed to activate Biomni MCP Integration:', errorMessage);
-    void vscode.window.showErrorMessage(
-      `Failed to activate Biomni MCP Integration: ${errorMessage}`
-    );
+    console.error('Failed to initialize services:', errorMessage);
+    // Note: Commands are still registered even if services fail
   }
+  
+  console.log('===== BIOMNI EXTENSION ACTIVATION COMPLETE =====');
+  console.log(`Total commands registered: ${BIOMNI_COMMANDS.length}`);
 }
 
 /**
@@ -133,31 +145,39 @@ export async function deactivate(): Promise<void> {
  * Register all Biomni commands using the new command system
  */
 function registerBiomniCommands(context: vscode.ExtensionContext): void {
+  console.log(`Registering ${BIOMNI_COMMANDS.length} Biomni commands...`);
+  
   // Register all commands from the BIOMNI_COMMANDS configuration
   BIOMNI_COMMANDS.forEach(commandDef => {
-    const command = vscode.commands.registerCommand(commandDef.command, async () => {
-      if (!commandHandlers) {
-        void vscode.window.showErrorMessage('Command handlers not initialized');
-        return;
-      }
-
-      try {
-        // Map command identifiers to handler methods
-        const handlerMethodName = commandDef.handler;
-        const handlerMethod = (commandHandlers as any)[handlerMethodName];
-        
-        if (typeof handlerMethod === 'function') {
-          await handlerMethod.call(commandHandlers);
-        } else {
-          void vscode.window.showWarningMessage(`Handler ${handlerMethodName} not implemented yet`);
+    try {
+      console.log(`Registering command: ${commandDef.command}`);
+      const command = vscode.commands.registerCommand(commandDef.command, async () => {
+        if (!commandHandlers) {
+          void vscode.window.showErrorMessage('Command handlers not initialized');
+          return;
         }
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        void vscode.window.showErrorMessage(`Command failed: ${errorMsg}`);
-      }
-    });
-    
-    context.subscriptions.push(command);
+
+        try {
+          // Map command identifiers to handler methods
+          const handlerMethodName = commandDef.handler;
+          const handlerMethod = (commandHandlers as any)[handlerMethodName];
+          
+          if (typeof handlerMethod === 'function') {
+            await handlerMethod.call(commandHandlers);
+          } else {
+            void vscode.window.showWarningMessage(`Handler ${handlerMethodName} not implemented yet`);
+          }
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          void vscode.window.showErrorMessage(`Command failed: ${errorMsg}`);
+        }
+      });
+      
+      context.subscriptions.push(command);
+      console.log(`Successfully registered: ${commandDef.command}`);
+    } catch (error) {
+      console.error(`Failed to register command ${commandDef.command}:`, error);
+    }
   });
 
   // Also register legacy activate/deactivate commands for backward compatibility
