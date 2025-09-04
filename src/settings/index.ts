@@ -70,7 +70,8 @@ export class BiomniSettingsService {
       console.log('Biomni Settings Service initialized successfully');
     } catch (error) {
       console.error('Failed to initialize settings service:', error);
-      throw error;
+      // Don't throw - allow extension to continue with basic functionality
+      // Commands can still work even if settings initialization fails
     }
   }
 
@@ -177,21 +178,18 @@ export class BiomniSettingsService {
    * Get all API key names (not values)
    */
   public async getAllApiKeys(): Promise<Record<string, boolean>> {
-    const keys = await this.context.secrets.get('biomni.apiKeys');
-    const result: Record<string, boolean> = {};
-    
-    if (keys) {
-      try {
-        const keyList = JSON.parse(keys) as string[];
-        for (const key of keyList) {
-          result[key] = true;
-        }
-      } catch (error) {
-        console.error('Failed to parse API key list:', error);
+    // Use the SecretStorageManager metadata to determine configured API keys
+    try {
+      const keyNames = await this.secretStorage.listSecrets();
+      const result: Record<string, boolean> = {};
+      for (const key of keyNames) {
+        result[key] = true;
       }
+      return result;
+    } catch (error) {
+      console.error('Failed to list API keys from secret storage:', error);
+      return {};
     }
-    
-    return result;
   }
 
   /**

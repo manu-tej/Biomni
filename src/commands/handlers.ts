@@ -1290,10 +1290,16 @@ print(result)
    * Handle manage API keys command
    */
   async handleManageApiKeys(): Promise<void> {
-    const settingsService = BiomniSettingsService.getInstance(
-      await this.getExtensionContext(),
-      vscode.ConfigurationTarget.Global
-    );
+    let settingsService: BiomniSettingsService;
+    try {
+      settingsService = BiomniSettingsService.getInstance(
+        await this.getExtensionContext(),
+        vscode.ConfigurationTarget.Global
+      );
+    } catch (error) {
+      void vscode.window.showErrorMessage('Settings service not available. Please reload the extension.');
+      return;
+    }
 
     try {
       const action = await vscode.window.showQuickPick([
@@ -1355,10 +1361,16 @@ print(result)
    * Handle validate configuration command
    */
   async handleValidateConfiguration(): Promise<void> {
-    const settingsService = BiomniSettingsService.getInstance(
-      await this.getExtensionContext(),
-      vscode.ConfigurationTarget.Global
-    );
+    let settingsService: BiomniSettingsService;
+    try {
+      settingsService = BiomniSettingsService.getInstance(
+        await this.getExtensionContext(),
+        vscode.ConfigurationTarget.Global
+      );
+    } catch (error) {
+      void vscode.window.showErrorMessage('Settings service not available. Please reload the extension.');
+      return;
+    }
 
     try {
       await settingsService.getAllSettings();
@@ -1373,10 +1385,16 @@ print(result)
    * Handle export settings command
    */
   async handleExportSettings(): Promise<void> {
-    const settingsService = BiomniSettingsService.getInstance(
-      await this.getExtensionContext(),
-      vscode.ConfigurationTarget.Global
-    );
+    let settingsService: BiomniSettingsService;
+    try {
+      settingsService = BiomniSettingsService.getInstance(
+        await this.getExtensionContext(),
+        vscode.ConfigurationTarget.Global
+      );
+    } catch (error) {
+      void vscode.window.showErrorMessage('Settings service not available. Please reload the extension.');
+      return;
+    }
 
     try {
       const settings = await settingsService.getAllSettings();
@@ -1403,10 +1421,16 @@ print(result)
    * Handle import settings command
    */
   async handleImportSettings(): Promise<void> {
-    const settingsService = BiomniSettingsService.getInstance(
-      await this.getExtensionContext(),
-      vscode.ConfigurationTarget.Global
-    );
+    let settingsService: BiomniSettingsService;
+    try {
+      settingsService = BiomniSettingsService.getInstance(
+        await this.getExtensionContext(),
+        vscode.ConfigurationTarget.Global
+      );
+    } catch (error) {
+      void vscode.window.showErrorMessage('Settings service not available. Please reload the extension.');
+      return;
+    }
 
     try {
       const uri = await vscode.window.showOpenDialog({
@@ -1444,10 +1468,16 @@ print(result)
    * Handle reset settings command
    */
   async handleResetSettings(): Promise<void> {
-    const settingsService = BiomniSettingsService.getInstance(
-      await this.getExtensionContext(),
-      vscode.ConfigurationTarget.Global
-    );
+    let settingsService: BiomniSettingsService;
+    try {
+      settingsService = BiomniSettingsService.getInstance(
+        await this.getExtensionContext(),
+        vscode.ConfigurationTarget.Global
+      );
+    } catch (error) {
+      void vscode.window.showErrorMessage('Settings service not available. Please reload the extension.');
+      return;
+    }
 
     const confirm = await vscode.window.showWarningMessage(
       'Are you sure you want to reset all settings to defaults?',

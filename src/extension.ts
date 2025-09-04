@@ -20,10 +20,20 @@ let commandHandlers: BiomniCommandHandlers | undefined;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log('Biomni MCP Integration extension is now active!');
 
+  // CRITICAL: Register commands FIRST - this should never fail
+  // Initialize command handlers with minimal dependencies
+  commandHandlers = new BiomniCommandHandlers(undefined, context);
+  
+  // Register all commands immediately
+  registerBiomniCommands(context);
+  console.log('Commands registered successfully');
+
+  // Now try to initialize other services (these can fail without breaking commands)
   try {
-    // Initialize settings service first
+    // Initialize settings service
     settingsService = BiomniSettingsService.getInstance(context, vscode.ConfigurationTarget.Global);
     await settingsService.initialize();
+    console.log('Settings service initialized');
 
     // Get extension configuration from new settings service
     const config = await getExtensionConfig();
@@ -31,30 +41,34 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Initialize file type detection system
     fileTypeManager = new FileTypeManager();
     fileTypeManager.initialize(context);
+    console.log('File type manager initialized');
 
     // Initialize MCP provider and client if enabled
     if (config.enabled) {
-      // Create MCP provider
-      mcpProvider = new BiomniMCPProvider(config);
-      
-      // Register MCP provider with VSCode language model system
-      const mcpProviderDisposable = vscode.lm.registerMcpServerDefinitionProvider('biomniProvider', {
-        onDidChangeMcpServerDefinitions: mcpProvider.onDidChangeMcpServerDefinitions,
-        provideMcpServerDefinitions: mcpProvider.provideMcpServerDefinitions.bind(mcpProvider),
-        resolveMcpServerDefinition: mcpProvider.resolveMcpServerDefinition.bind(mcpProvider)
-      });
-      context.subscriptions.push(mcpProviderDisposable);
+      try {
+        // Create MCP provider
+        mcpProvider = new BiomniMCPProvider(config);
+        
+        // Register MCP provider with VSCode language model system
+        const mcpProviderDisposable = vscode.lm.registerMcpServerDefinitionProvider('biomniProvider', {
+          onDidChangeMcpServerDefinitions: mcpProvider.onDidChangeMcpServerDefinitions,
+          provideMcpServerDefinitions: mcpProvider.provideMcpServerDefinitions.bind(mcpProvider),
+          resolveMcpServerDefinition: mcpProvider.resolveMcpServerDefinition.bind(mcpProvider)
+        });
+        context.subscriptions.push(mcpProviderDisposable);
 
-      // Initialize MCP client for direct communication
-      mcpClient = new BiomniMcpClient(config);
-      await mcpClient.initialize();
+        // Initialize MCP client for direct communication
+        mcpClient = new BiomniMcpClient(config);
+        await mcpClient.initialize();
+        
+        // Update command handlers with MCP client
+        commandHandlers.updateMcpClient(mcpClient);
+        console.log('MCP client initialized');
+      } catch (mcpError) {
+        console.error('MCP initialization failed:', mcpError);
+        // Continue without MCP - commands still work
+      }
     }
-
-    // Initialize command handlers with context
-    commandHandlers = new BiomniCommandHandlers(mcpClient, context);
-    
-    // Register all Biomni commands
-    registerBiomniCommands(context);
 
     // Show activation message
     if (config.autoActivate) {

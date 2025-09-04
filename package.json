@@ -19,7 +19,22 @@
     "code-intelligence"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:biomni.settings.manageApiKeys",
+    "onCommand:biomni.settings.validateConfiguration",
+    "onCommand:biomni.settings.export",
+    "onCommand:biomni.settings.import",
+    "onCommand:biomni.settings.reset",
+    "onCommand:biomni.database.queryUniprot",
+    "onCommand:biomni.database.queryPdb",
+    "onCommand:biomni.database.queryAlphaFold",
+    "onCommand:biomni.database.queryInterPro",
+    "onCommand:biomni.genomics.blast",
+    "onCommand:biomni.genomics.annotateScRNA",
+    "onCommand:biomni.genomics.geneOntology",
+    "onCommand:biomni.files.validate",
+    "onCommand:biomni.files.showInfo",
+    "onCommand:biomni.files.suggestTools"
   ],
   "main": "./out/extension.js",
   "contributes": {
