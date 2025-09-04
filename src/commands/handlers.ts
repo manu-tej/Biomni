@@ -30,6 +30,7 @@ export class BiomniCommandHandlers {
   private context: vscode.ExtensionContext | undefined;
 
   constructor(mcpClient?: BiomniMcpClient, context?: vscode.ExtensionContext) {
+    console.log('BiomniCommandHandlers constructor called');
     this.mcpClient = mcpClient;
     this.context = context;
     this.outputChannel = vscode.window.createOutputChannel('Biomni');
@@ -37,6 +38,7 @@ export class BiomniCommandHandlers {
     // by writing an initialization line at construction time.
     try {
       this.outputChannel.appendLine('Biomni output initialized');
+      console.log('BiomniCommandHandlers initialized with methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(m => m.startsWith('handle')).length, 'handlers');
     } catch {
       // noop
     }
@@ -839,11 +841,499 @@ print(result)
   }
 
   async handleValidateFormat(): Promise<void> {
-    void vscode.window.showInformationMessage('File format validation - Implementation in progress');
+    try {
+      // Get the active file
+      const activeEditor = vscode.window.activeTextEditor;
+      if (!activeEditor) {
+        void vscode.window.showWarningMessage('Please open a biological file to validate');
+        return;
+      }
+
+      const document = activeEditor.document;
+      const fileName = document.fileName;
+      const fileExtension = fileName.split('.').pop()?.toLowerCase();
+      const content = document.getText();
+
+      // Validate based on file type
+      let isValid = false;
+      let errors: string[] = [];
+      let fileType = '';
+
+      switch (fileExtension) {
+        case 'fasta':
+        case 'fa':
+        case 'fas':
+        case 'fna':
+          fileType = 'FASTA';
+          const fastaValidation = this.validateFastaFormat(content);
+          isValid = fastaValidation.isValid;
+          errors = fastaValidation.errors;
+          break;
+        
+        case 'fastq':
+        case 'fq':
+          fileType = 'FASTQ';
+          const fastqValidation = this.validateFastqFormat(content);
+          isValid = fastqValidation.isValid;
+          errors = fastqValidation.errors;
+          break;
+        
+        case 'vcf':
+          fileType = 'VCF';
+          const vcfValidation = this.validateVcfFormat(content);
+          isValid = vcfValidation.isValid;
+          errors = vcfValidation.errors;
+          break;
+        
+        case 'pdb':
+          fileType = 'PDB';
+          const pdbValidation = this.validatePdbFormat(content);
+          isValid = pdbValidation.isValid;
+          errors = pdbValidation.errors;
+          break;
+        
+        default:
+          void vscode.window.showWarningMessage(`File type .${fileExtension} is not currently supported for validation`);
+          return;
+      }
+
+      // Show validation results
+      if (isValid) {
+        void vscode.window.showInformationMessage(`✅ ${fileType} file is valid!`);
+      } else {
+        // Show detailed error in output channel
+        const outputChannel = vscode.window.createOutputChannel('Biomni File Validation');
+        outputChannel.clear();
+        outputChannel.appendLine(`File: ${fileName}`);
+        outputChannel.appendLine(`Type: ${fileType}`);
+        outputChannel.appendLine('');
+        outputChannel.appendLine('Validation Errors:');
+        errors.forEach(error => outputChannel.appendLine(`  - ${error}`));
+        outputChannel.show();
+        
+        void vscode.window.showErrorMessage(`${fileType} validation failed. See Output panel for details.`);
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      void vscode.window.showErrorMessage(`File validation failed: ${errorMsg}`);
+    }
+  }
+
+  private validateFastaFormat(content: string): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    const lines = content.split('\n');
+    let lineNum = 0;
+    let hasSequence = false;
+
+    for (const line of lines) {
+      lineNum++;
+      const trimmedLine = line.trim();
+      
+      // Skip empty lines
+      if (trimmedLine.length === 0) continue;
+      
+      // Check header line
+      if (trimmedLine.startsWith('>')) {
+        if (trimmedLine.length === 1) {
+          errors.push(`Line ${lineNum}: Empty header (missing description)`);
+        }
+        hasSequence = false;
+      } else {
+        // Check sequence line
+        hasSequence = true;
+        
+        // Remove spaces for validation (spaces are allowed in FASTA for readability)
+        const sequenceNoSpaces = trimmedLine.replace(/\s/g, '');
+        
+        // Validate sequence characters (allow standard nucleotides and amino acids)
+        // Extended set includes: standard amino acids, nucleotides, ambiguity codes, gaps, and stop
+        const validChars = /^[ACDEFGHIKLMNPQRSTVWYBZXU*-]+$/i;
+        if (!validChars.test(sequenceNoSpaces)) {
+          // Find the invalid character for better error message
+          const invalidChar = sequenceNoSpaces.split('').find(char => !validChars.test(char));
+          errors.push(`Line ${lineNum}: Invalid character '${invalidChar}' in sequence`);
+        }
+      }
+    }
+
+    if (!hasSequence) {
+      errors.push('File contains no sequences');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  private validateFastqFormat(content: string): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    const lines = content.split('\n').filter(line => line.trim().length > 0);
+    
+    if (lines.length % 4 !== 0) {
+      errors.push(`FASTQ file should have lines in groups of 4, found ${lines.length} lines`);
+    }
+
+    for (let i = 0; i < lines.length; i += 4) {
+      const recordNum = Math.floor(i / 4) + 1;
+      
+      // Check header
+      const header = lines[i];
+      if (header && !header.startsWith('@')) {
+        errors.push(`Record ${recordNum}: Header should start with @`);
+      }
+      
+      // Check separator  
+      const separator = lines[i + 2];
+      if (separator && !separator.startsWith('+')) {
+        errors.push(`Record ${recordNum}: Third line should start with +`);
+      }
+      
+      // Check sequence and quality length
+      const sequence = lines[i + 1];
+      const quality = lines[i + 3];
+      if (sequence && quality) {
+        const seqLength = sequence.length;
+        const qualLength = quality.length;
+        if (seqLength !== qualLength) {
+          errors.push(`Record ${recordNum}: Sequence and quality lengths don't match (${seqLength} vs ${qualLength})`);
+        }
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  private validateVcfFormat(content: string): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    const lines = content.split('\n');
+    let hasHeader = false;
+    let hasColumnHeader = false;
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.length === 0) continue;
+      
+      // Check meta-information lines
+      if (trimmedLine.startsWith('##')) {
+        hasHeader = true;
+        continue;
+      }
+      
+      // Check column header
+      if (trimmedLine.startsWith('#CHROM')) {
+        hasColumnHeader = true;
+        const columns = trimmedLine.split('\t');
+        if (columns.length < 8) {
+          errors.push('Column header should have at least 8 columns');
+        }
+        continue;
+      }
+      
+      // Check data lines
+      const columns = trimmedLine.split('\t');
+      if (columns.length < 8) {
+        errors.push(`Data line has ${columns.length} columns, expected at least 8`);
+      }
+    }
+
+    if (!hasHeader) {
+      errors.push('Missing VCF header (## lines)');
+    }
+    if (!hasColumnHeader) {
+      errors.push('Missing column header (#CHROM line)');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  private validatePdbFormat(content: string): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    const lines = content.split('\n');
+    let hasHeader = false;
+    let hasAtom = false;
+    let hasEnd = false;
+
+    for (const line of lines) {
+      if (line.startsWith('HEADER')) {
+        hasHeader = true;
+      } else if (line.startsWith('ATOM') || line.startsWith('HETATM')) {
+        hasAtom = true;
+        // Check line length (PDB format has fixed column widths)
+        if (line.length < 54) {
+          errors.push('ATOM/HETATM line too short (should be at least 54 characters)');
+        }
+      } else if (line.startsWith('END')) {
+        hasEnd = true;
+      }
+    }
+
+    if (!hasHeader) {
+      errors.push('Missing HEADER record');
+    }
+    if (!hasAtom) {
+      errors.push('No ATOM or HETATM records found');
+    }
+    if (!hasEnd) {
+      errors.push('Missing END record');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   }
 
   async handleShowInfo(): Promise<void> {
-    void vscode.window.showInformationMessage('File information display - Implementation in progress');
+    try {
+      // Get the active file
+      const activeEditor = vscode.window.activeTextEditor;
+      if (!activeEditor) {
+        void vscode.window.showWarningMessage('Please open a file to show information');
+        return;
+      }
+
+      const document = activeEditor.document;
+      const fileName = document.fileName;
+      const fileExtension = fileName.split('.').pop()?.toLowerCase();
+      const content = document.getText();
+      const lines = content.split('\n');
+      
+      // Get file stats
+      const filePath = document.uri.fsPath;
+      const stats = await vscode.workspace.fs.stat(document.uri);
+      
+      // Analyze based on file type
+      let fileInfo: any = {
+        'File Name': fileName.split('/').pop(),
+        'File Path': filePath,
+        'File Size': `${(stats.size / 1024).toFixed(2)} KB`,
+        'Total Lines': lines.length,
+        'File Type': fileExtension?.toUpperCase() || 'Unknown'
+      };
+
+      // Add specific info based on file type
+      switch (fileExtension) {
+        case 'fasta':
+        case 'fa':
+        case 'fas':
+        case 'fna':
+        case 'faa':
+          const fastaInfo = this.analyzeFastaFile(content);
+          fileInfo = { ...fileInfo, ...fastaInfo };
+          break;
+        
+        case 'fastq':
+        case 'fq':
+          const fastqInfo = this.analyzeFastqFile(content);
+          fileInfo = { ...fileInfo, ...fastqInfo };
+          break;
+        
+        case 'vcf':
+          const vcfInfo = this.analyzeVcfFile(content);
+          fileInfo = { ...fileInfo, ...vcfInfo };
+          break;
+        
+        case 'pdb':
+          const pdbInfo = this.analyzePdbFile(content);
+          fileInfo = { ...fileInfo, ...pdbInfo };
+          break;
+      }
+
+      // Create formatted output
+      const outputChannel = vscode.window.createOutputChannel('Biomni File Information');
+      outputChannel.clear();
+      outputChannel.appendLine('═══════════════════════════════════════');
+      outputChannel.appendLine('         BIOMNI FILE INFORMATION       ');
+      outputChannel.appendLine('═══════════════════════════════════════');
+      outputChannel.appendLine('');
+      
+      for (const [key, value] of Object.entries(fileInfo)) {
+        outputChannel.appendLine(`${key.padEnd(20)}: ${value}`);
+      }
+      
+      outputChannel.appendLine('');
+      outputChannel.appendLine('═══════════════════════════════════════');
+      outputChannel.show();
+      
+      void vscode.window.showInformationMessage('File information displayed in Output panel');
+      
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      void vscode.window.showErrorMessage(`Failed to show file info: ${errorMsg}`);
+    }
+  }
+
+  private analyzeFastaFile(content: string): any {
+    const lines = content.split('\n');
+    let sequenceCount = 0;
+    let totalSequenceLength = 0;
+    let currentSequenceLength = 0;
+    let sequenceLengths: number[] = [];
+    let sequenceHeaders: string[] = [];
+    let sequenceTypes = new Set<string>();
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('>')) {
+        if (currentSequenceLength > 0) {
+          sequenceLengths.push(currentSequenceLength);
+          totalSequenceLength += currentSequenceLength;
+          currentSequenceLength = 0;
+        }
+        sequenceCount++;
+        sequenceHeaders.push(trimmedLine.substring(1).trim());
+      } else if (trimmedLine.length > 0) {
+        currentSequenceLength += trimmedLine.replace(/\s/g, '').length;
+        
+        // Detect sequence type
+        const seqNoSpace = trimmedLine.replace(/\s/g, '').toUpperCase();
+        if (/^[ACGTU]+$/.test(seqNoSpace)) {
+          sequenceTypes.add('Nucleotide');
+        } else if (/^[ACDEFGHIKLMNPQRSTVWY*]+$/.test(seqNoSpace)) {
+          sequenceTypes.add('Protein');
+        }
+      }
+    }
+    
+    // Add last sequence
+    if (currentSequenceLength > 0) {
+      sequenceLengths.push(currentSequenceLength);
+      totalSequenceLength += currentSequenceLength;
+    }
+    
+    const avgLength = sequenceCount > 0 ? Math.round(totalSequenceLength / sequenceCount) : 0;
+    const minLength = sequenceLengths.length > 0 ? Math.min(...sequenceLengths) : 0;
+    const maxLength = sequenceLengths.length > 0 ? Math.max(...sequenceLengths) : 0;
+    
+    return {
+      'Format': 'FASTA',
+      'Sequences': sequenceCount,
+      'Total Residues': totalSequenceLength,
+      'Avg Sequence Length': avgLength,
+      'Min Sequence Length': minLength,
+      'Max Sequence Length': maxLength,
+      'Sequence Type': Array.from(sequenceTypes).join(', ') || 'Mixed/Unknown',
+      'First Sequence ID': sequenceHeaders[0] || 'N/A'
+    };
+  }
+
+  private analyzeFastqFile(content: string): any {
+    const lines = content.split('\n').filter(line => line.trim().length > 0);
+    const recordCount = Math.floor(lines.length / 4);
+    let totalSequenceLength = 0;
+    let totalQualityScore = 0;
+    let qualityScoreCount = 0;
+    
+    for (let i = 1; i < lines.length; i += 4) {
+      const sequence = lines[i];
+      if (sequence) {
+        totalSequenceLength += sequence.length;
+      }
+      const qualityLine = lines[i + 2];
+      if (qualityLine) {
+        // Analyze quality scores (ASCII to Phred)
+        for (const char of qualityLine) {
+          const phredScore = char.charCodeAt(0) - 33; // Assuming Phred+33
+          totalQualityScore += phredScore;
+          qualityScoreCount++;
+        }
+      }
+    }
+    
+    const avgQuality = qualityScoreCount > 0 ? (totalQualityScore / qualityScoreCount).toFixed(1) : 'N/A';
+    const avgReadLength = recordCount > 0 ? Math.round(totalSequenceLength / recordCount) : 0;
+    
+    return {
+      'Format': 'FASTQ',
+      'Total Reads': recordCount,
+      'Total Bases': totalSequenceLength,
+      'Avg Read Length': avgReadLength,
+      'Avg Quality Score': avgQuality,
+      'Quality Encoding': 'Phred+33 (assumed)'
+    };
+  }
+
+  private analyzeVcfFile(content: string): any {
+    const lines = content.split('\n');
+    let variantCount = 0;
+    let samples: string[] = [];
+    let chromosomes = new Set<string>();
+    let variantTypes = new Set<string>();
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('#CHROM')) {
+        const columns = trimmedLine.split('\t');
+        samples = columns.slice(9); // Samples start from column 10
+      } else if (!trimmedLine.startsWith('#') && trimmedLine.length > 0) {
+        variantCount++;
+        const columns = trimmedLine.split('\t');
+        if (columns[0]) chromosomes.add(columns[0]);
+        
+        // Detect variant type
+        if (columns[3] && columns[4]) {
+          const ref = columns[3];
+          const alt = columns[4];
+          if (ref.length === 1 && alt.length === 1) {
+            variantTypes.add('SNP');
+          } else if (ref.length > alt.length) {
+            variantTypes.add('Deletion');
+          } else if (ref.length < alt.length) {
+            variantTypes.add('Insertion');
+          }
+        }
+      }
+    }
+    
+    return {
+      'Format': 'VCF',
+      'Total Variants': variantCount,
+      'Samples': samples.length > 0 ? samples.join(', ') : 'No samples',
+      'Chromosomes': Array.from(chromosomes).join(', ') || 'None',
+      'Variant Types': Array.from(variantTypes).join(', ') || 'Unknown'
+    };
+  }
+
+  private analyzePdbFile(content: string): any {
+    const lines = content.split('\n');
+    let atomCount = 0;
+    let hetatomCount = 0;
+    let chains = new Set<string>();
+    let residues = new Set<string>();
+    let title = '';
+    let resolution = 'N/A';
+    
+    for (const line of lines) {
+      if (line.startsWith('TITLE')) {
+        title += line.substring(10).trim() + ' ';
+      } else if (line.startsWith('REMARK   2 RESOLUTION')) {
+        const match = line.match(/(\d+\.\d+)/);
+        if (match) resolution = match[1] + ' Å';
+      } else if (line.startsWith('ATOM')) {
+        atomCount++;
+        if (line.length > 21 && line[21]) chains.add(line[21]);
+        if (line.length > 19) residues.add(line.substring(17, 20).trim());
+      } else if (line.startsWith('HETATM')) {
+        hetatomCount++;
+      }
+    }
+    
+    return {
+      'Format': 'PDB',
+      'Title': title.trim() || 'N/A',
+      'Resolution': resolution,
+      'Total Atoms': atomCount,
+      'Total Heteroatoms': hetatomCount,
+      'Chains': Array.from(chains).filter(c => c.trim()).join(', ') || 'N/A',
+      'Unique Residues': residues.size
+    };
   }
 
   async handleSuggestTools(): Promise<void> {

@@ -280,6 +280,11 @@
         "icon": "$(verified)"
       },
       {
+        "command": "biomni.test",
+        "title": "Test Command",
+        "category": "Biomni"
+      },
+      {
         "command": "biomni.mcp.showStatus",
         "title": "Show MCP Server Status",
         "category": "Biomni MCP",

@@ -18,8 +18,11 @@ let commandHandlers: BiomniCommandHandlers | undefined;
  * Called when the extension is activated
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  // Immediate output to verify activation is called
+  void vscode.window.showInformationMessage('🚀 Biomni Extension: Activation starting...');
   console.log('===== BIOMNI EXTENSION ACTIVATION STARTED =====');
   console.log('Extension path:', context.extensionPath);
+  console.log('Timestamp:', new Date().toISOString());
   
   try {
     // CRITICAL: Register commands FIRST - this should never fail
@@ -27,6 +30,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     console.log('Creating command handlers...');
     commandHandlers = new BiomniCommandHandlers(undefined, context);
     console.log('Command handlers created');
+    console.log('Command handlers object:', typeof commandHandlers);
+    console.log('handleValidateFormat exists?', typeof (commandHandlers as any).handleValidateFormat);
     
     // Register all commands immediately
     console.log('Starting command registration...');
@@ -160,11 +165,14 @@ function registerBiomniCommands(context: vscode.ExtensionContext): void {
         try {
           // Map command identifiers to handler methods
           const handlerMethodName = commandDef.handler;
+          console.log(`Executing command ${commandDef.command} with handler ${handlerMethodName}`);
           const handlerMethod = (commandHandlers as any)[handlerMethodName];
           
           if (typeof handlerMethod === 'function') {
+            console.log(`Calling handler method ${handlerMethodName}`);
             await handlerMethod.call(commandHandlers);
           } else {
+            console.error(`Handler ${handlerMethodName} not found on commandHandlers`);
             void vscode.window.showWarningMessage(`Handler ${handlerMethodName} not implemented yet`);
           }
         } catch (error) {
@@ -182,10 +190,20 @@ function registerBiomniCommands(context: vscode.ExtensionContext): void {
 
   // Also register legacy activate/deactivate commands for backward compatibility
   registerLegacyCommands(context);
+  
+  // Register a simple test command to verify command system works
+  const testCommand = vscode.commands.registerCommand('biomni.test', () => {
+    console.log('TEST COMMAND EXECUTED');
+    void vscode.window.showInformationMessage('Biomni Test Command Works! Extension is active.');
+  });
+  context.subscriptions.push(testCommand);
+  console.log('Test command registered: biomni.test');
 }
 
 /**
  * Register legacy extension commands for backward compatibility
+ * NOTE: Only register commands here that are NOT in BIOMNI_COMMANDS array
+ * to avoid duplicate registration errors
  */
 function registerLegacyCommands(context: vscode.ExtensionContext): void {
   const commands = [
@@ -324,29 +342,7 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
       }
     }),
 
-    vscode.commands.registerCommand('biomni.mcp.refreshTools', async () => {
-      try {
-        if (!mcpClient) {
-          void vscode.window.showWarningMessage('Biomni MCP client is not active');
-          return;
-        }
-
-        void vscode.window.showInformationMessage('Refreshing tool discovery...');
-        
-        // Get fresh capabilities from server
-        const capabilities = await mcpClient.getCapabilities();
-        const toolCount = capabilities.tools?.length || 0;
-        
-        void vscode.window.showInformationMessage(
-          `✅ Tool discovery refreshed! Found ${toolCount} tools.`
-        );
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        void vscode.window.showErrorMessage(`Tool refresh failed: ${errorMessage}`);
-      }
-    }),
-
-    // Settings management commands
+    // Settings management command (not duplicated in BIOMNI_COMMANDS)
     vscode.commands.registerCommand('biomni.settings.openPanel', async () => {
       try {
         await vscode.commands.executeCommand('workbench.action.openSettings', 'biomni');
@@ -354,97 +350,6 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         void vscode.window.showErrorMessage(`Failed to open settings panel: ${errorMessage}`);
-      }
-    }),
-
-    vscode.commands.registerCommand('biomni.settings.export', async () => {
-      if (!settingsService) {
-        void vscode.window.showErrorMessage('Settings service not initialized');
-        return;
-      }
-
-      try {
-        const exportData = await settingsService.exportSettings(true);
-        const timestamp = new Date().toISOString().split('T')[0];
-        const filename = `biomni-settings-${timestamp}.json`;
-        
-        const uri = await vscode.window.showSaveDialog({
-          defaultUri: vscode.Uri.file(filename),
-          filters: {
-            'JSON files': ['json'],
-            'All files': ['*']
-          }
-        });
-
-        if (uri) {
-          await vscode.workspace.fs.writeFile(uri, Buffer.from(JSON.stringify(exportData, null, 2)));
-          void vscode.window.showInformationMessage(`Settings exported to ${uri.fsPath}`);
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        void vscode.window.showErrorMessage(`Export failed: ${errorMessage}`);
-      }
-    }),
-
-    vscode.commands.registerCommand('biomni.settings.import', async () => {
-      if (!settingsService) {
-        void vscode.window.showErrorMessage('Settings service not initialized');
-        return;
-      }
-
-      try {
-        const uri = await vscode.window.showOpenDialog({
-          canSelectMany: false,
-          openLabel: 'Import Settings',
-          filters: {
-            'JSON files': ['json'],
-            'All files': ['*']
-          }
-        });
-
-        if (uri && uri.length > 0) {
-          const selectedUri = uri[0];
-          if (selectedUri) {
-            const fileContent = await vscode.workspace.fs.readFile(selectedUri);
-            const importData = JSON.parse(fileContent.toString());
-            
-            // Ask for confirmation
-            const choice = await vscode.window.showWarningMessage(
-              'This will overwrite your current settings. Continue?',
-              'Yes', 'No'
-            );
-            
-            if (choice === 'Yes') {
-              await settingsService.importSettings(importData);
-              void vscode.window.showInformationMessage('Settings imported successfully');
-            }
-          }
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        void vscode.window.showErrorMessage(`Import failed: ${errorMessage}`);
-      }
-    }),
-
-    vscode.commands.registerCommand('biomni.settings.reset', async () => {
-      if (!settingsService) {
-        void vscode.window.showErrorMessage('Settings service not initialized');
-        return;
-      }
-
-      try {
-        const choice = await vscode.window.showWarningMessage(
-          'This will reset all Biomni settings to default values. Continue?',
-          'Yes', 'No'
-        );
-        
-        if (choice === 'Yes') {
-          await settingsService.resetToDefaults();
-          void vscode.window.showInformationMessage('Settings reset to defaults');
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        void vscode.window.showErrorMessage(`Reset failed: ${errorMessage}`);
       }
     })
   ];
