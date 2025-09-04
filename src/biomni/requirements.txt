@@ -1,0 +1,9 @@
+# Enhanced MCP Server Dependencies
+pyyaml>=6.0
+psutil>=5.8.0
+mcp>=1.0.0
+biomni
+
+# Optional dependencies
+fastapi>=0.68.0  # For future HTTP transport support
+uvicorn>=0.15.0  # For future HTTP transport support

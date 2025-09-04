@@ -1,0 +1,25 @@
+# Enhanced Biomni MCP Server Configuration
+server:
+  name: "BiomniTools"
+  transport: "stdio"  # Currently only stdio supported, http planned
+  port: null          # For future HTTP transport
+  host: "localhost"   # For future HTTP transport
+
+logging:
+  level: "INFO"       # DEBUG, INFO, WARN, ERROR
+  format: "json"      # json or text
+  file: null          # Optional log file path
+
+tools:
+  # Tool modules to load and expose via MCP
+  modules:
+    - "biomni.tool.database"
+    - "biomni.tool.file_manager"
+    - "biomni.tool.data_processing"
+  
+  # Automatically discover tools in modules
+  auto_discover: true
+
+health_check:
+  enabled: true
+  interval: 30        # Health check interval in seconds

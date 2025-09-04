@@ -1,0 +1,25 @@
+{
+  "server": {
+    "name": "BiomniTools",
+    "transport": "stdio",
+    "port": null,
+    "host": "localhost"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "json",
+    "file": null
+  },
+  "tools": {
+    "modules": [
+      "biomni.tool.database",
+      "biomni.tool.file_manager",
+      "biomni.tool.data_processing"
+    ],
+    "auto_discover": true
+  },
+  "health_check": {
+    "enabled": true,
+    "interval": 30
+  }
+}
