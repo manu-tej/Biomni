@@ -140,6 +140,26 @@
         "command": "biomni.settings.validateConfiguration",
         "title": "Validate Configuration",
         "category": "Biomni Settings"
+      },
+      {
+        "command": "biomni.mcp.showStatus",
+        "title": "Show MCP Server Status",
+        "category": "Biomni MCP"
+      },
+      {
+        "command": "biomni.mcp.listTools",
+        "title": "List Available Tools",
+        "category": "Biomni MCP"
+      },
+      {
+        "command": "biomni.mcp.testConnection",
+        "title": "Test MCP Connection",
+        "category": "Biomni MCP"
+      },
+      {
+        "command": "biomni.mcp.refreshTools",
+        "title": "Refresh Tool Discovery",
+        "category": "Biomni MCP"
       }
     ],
     "menus": {
@@ -188,6 +208,12 @@
         }
       ]
     },
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "biomniProvider",
+        "label": "Biomni MCP Server Provider"
+      }
+    ],
     "configuration": {
       "title": "Biomni MCP Integration",
       "properties": {
@@ -216,6 +242,42 @@
           "type": "boolean",
           "default": false,
           "description": "Enable anonymous telemetry and usage statistics"
+        },
+        "biomni.mcp.server.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to Python executable for running MCP server"
+        },
+        "biomni.mcp.server.scriptPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Biomni MCP server script (leave empty for auto-detection)"
+        },
+        "biomni.mcp.server.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start MCP server when extension activates"
+        },
+        "biomni.mcp.server.healthCheckInterval": {
+          "type": "number",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 300,
+          "description": "Health check interval in seconds"
+        },
+        "biomni.mcp.server.connectionTimeout": {
+          "type": "number",
+          "default": 10000,
+          "minimum": 1000,
+          "maximum": 60000,
+          "description": "MCP server connection timeout in milliseconds"
+        },
+        "biomni.mcp.server.maxRetries": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Maximum retry attempts for MCP server operations"
         },
         "biomni.extension.fileDetection.enabled": {
           "type": "boolean",
