@@ -110,6 +110,36 @@
         "command": "biomni.vcf.annotate",
         "title": "Annotate Variants",
         "category": "Biomni VCF"
+      },
+      {
+        "command": "biomni.settings.openPanel",
+        "title": "Open Settings Panel",
+        "category": "Biomni Settings"
+      },
+      {
+        "command": "biomni.settings.export",
+        "title": "Export Settings",
+        "category": "Biomni Settings"
+      },
+      {
+        "command": "biomni.settings.import",
+        "title": "Import Settings",
+        "category": "Biomni Settings"
+      },
+      {
+        "command": "biomni.settings.reset",
+        "title": "Reset to Defaults",
+        "category": "Biomni Settings"
+      },
+      {
+        "command": "biomni.settings.manageApiKeys",
+        "title": "Manage API Keys",
+        "category": "Biomni Settings"
+      },
+      {
+        "command": "biomni.settings.validateConfiguration",
+        "title": "Validate Configuration",
+        "category": "Biomni Settings"
       }
     ],
     "menus": {
@@ -161,40 +191,409 @@
     "configuration": {
       "title": "Biomni MCP Integration",
       "properties": {
-        "biomni.enabled": {
+        "biomni.extension.core.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable Biomni MCP integration"
         },
-        "biomni.mcpServerUrl": {
+        "biomni.extension.core.mcpServerUrl": {
           "type": "string",
           "default": "http://localhost:8080",
-          "description": "MCP server URL"
+          "description": "MCP server URL",
+          "pattern": "^https?://.+"
         },
-        "biomni.autoActivate": {
+        "biomni.extension.core.autoActivate": {
           "type": "boolean",
           "default": true,
           "description": "Automatically activate extension on workspace open"
         },
-        "biomni.showSmartSuggestions": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show smart suggestions when opening biological files"
-        },
-        "biomni.showNewFileNotifications": {
+        "biomni.extension.core.debugMode": {
           "type": "boolean",
           "default": false,
-          "description": "Show notifications when biological files are detected"
+          "description": "Enable debug mode with verbose logging"
         },
-        "biomni.fileDetection.cacheEnabled": {
+        "biomni.extension.core.telemetryEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable anonymous telemetry and usage statistics"
+        },
+        "biomni.extension.fileDetection.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic biological file type detection"
+        },
+        "biomni.extension.fileDetection.cacheEnabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable file detection result caching for better performance"
         },
-        "biomni.fileDetection.maxCacheSize": {
+        "biomni.extension.fileDetection.maxCacheSize": {
           "type": "number",
           "default": 1000,
+          "minimum": 10,
+          "maximum": 10000,
           "description": "Maximum number of files to cache detection results for"
+        },
+        "biomni.extension.fileDetection.showSmartSuggestions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show smart suggestions when opening biological files"
+        },
+        "biomni.extension.fileDetection.showNewFileNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show notifications when biological files are detected"
+        },
+        "biomni.extension.fileDetection.autoValidateFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically validate files when opened"
+        },
+        "biomni.extension.integration.enableCloudSync": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable cloud synchronization of settings and results"
+        },
+        "biomni.extension.integration.syncInterval": {
+          "type": "number",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 1440,
+          "description": "Synchronization interval in minutes"
+        },
+        "biomni.extension.integration.enableCollaboration": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable collaborative features for team workspaces"
+        },
+        "biomni.extension.integration.shareWorkspaceSettings": {
+          "type": "boolean",
+          "default": false,
+          "description": "Share workspace-specific settings with team members"
+        },
+        "biomni.tools.blast.database": {
+          "type": "string",
+          "default": "nt",
+          "enum": ["nt", "nr", "refseq_genomic", "refseq_protein", "swissprot", "pdb"],
+          "description": "Default BLAST database for sequence searches"
+        },
+        "biomni.tools.blast.eValue": {
+          "type": "number",
+          "default": 0.01,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "E-value threshold for BLAST searches"
+        },
+        "biomni.tools.blast.maxTargetSequences": {
+          "type": "number",
+          "default": 500,
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Maximum number of target sequences to return"
+        },
+        "biomni.tools.blast.wordSize": {
+          "type": "number",
+          "default": 11,
+          "minimum": 2,
+          "maximum": 50,
+          "description": "Word size for BLAST searches"
+        },
+        "biomni.tools.blast.customOptions": {
+          "type": "string",
+          "default": "",
+          "description": "Custom command-line options for BLAST"
+        },
+        "biomni.tools.alignment.algorithm": {
+          "type": "string",
+          "default": "muscle",
+          "enum": ["clustalw", "muscle", "mafft", "tcoffee"],
+          "description": "Default multiple sequence alignment algorithm"
+        },
+        "biomni.tools.alignment.format": {
+          "type": "string",
+          "default": "clustal",
+          "enum": ["clustal", "fasta", "phylip", "nexus"],
+          "description": "Output format for sequence alignments"
+        },
+        "biomni.tools.alignment.gapOpenPenalty": {
+          "type": "number",
+          "default": -10,
+          "minimum": -50,
+          "maximum": 0,
+          "description": "Gap opening penalty for alignments"
+        },
+        "biomni.tools.alignment.gapExtensionPenalty": {
+          "type": "number",
+          "default": -1,
+          "minimum": -50,
+          "maximum": 0,
+          "description": "Gap extension penalty for alignments"
+        },
+        "biomni.tools.annotation.defaultDatabases": {
+          "type": "array",
+          "default": ["uniprot", "go", "kegg"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Default databases for sequence annotation"
+        },
+        "biomni.tools.annotation.includeGeneOntology": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include Gene Ontology annotations in results"
+        },
+        "biomni.tools.annotation.includePathways": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include pathway annotations in results"
+        },
+        "biomni.tools.annotation.customAnnotationSources": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Custom annotation sources and databases"
+        },
+        "biomni.display.sequences.maxSequenceLength": {
+          "type": "number",
+          "default": 10000,
+          "minimum": 100,
+          "maximum": 1000000,
+          "description": "Maximum sequence length to display inline"
+        },
+        "biomni.display.sequences.showLineNumbers": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show line numbers in sequence displays"
+        },
+        "biomni.display.sequences.wrapLongSequences": {
+          "type": "boolean",
+          "default": true,
+          "description": "Wrap long sequences for better readability"
+        },
+        "biomni.display.sequences.highlightGcContent": {
+          "type": "boolean",
+          "default": false,
+          "description": "Highlight GC content in nucleotide sequences"
+        },
+        "biomni.display.sequences.colorScheme": {
+          "type": "string",
+          "default": "default",
+          "enum": ["default", "nucleotide", "protein", "hydrophobicity"],
+          "description": "Color scheme for sequence visualization"
+        },
+        "biomni.display.results.maxResultsPerPage": {
+          "type": "number",
+          "default": 50,
+          "minimum": 10,
+          "maximum": 1000,
+          "description": "Maximum number of results to show per page"
+        },
+        "biomni.display.results.showThumbnails": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show thumbnail previews for result files"
+        },
+        "biomni.display.results.defaultSortOrder": {
+          "type": "string",
+          "default": "evalue",
+          "enum": ["relevance", "evalue", "score", "length"],
+          "description": "Default sorting order for search results"
+        },
+        "biomni.display.results.enableInteractiveCharts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable interactive charts and visualizations"
+        },
+        "biomni.display.ui.theme": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "light", "dark"],
+          "description": "UI theme preference (auto follows VSCode theme)"
+        },
+        "biomni.display.ui.fontSize": {
+          "type": "number",
+          "default": 14,
+          "minimum": 8,
+          "maximum": 24,
+          "description": "Font size for Biomni interfaces"
+        },
+        "biomni.display.ui.showWelcomeScreen": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show welcome screen on first activation"
+        },
+        "biomni.display.ui.enableNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable system notifications for important events"
+        },
+        "biomni.performance.cache.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable result caching for improved performance"
+        },
+        "biomni.performance.cache.size": {
+          "type": "number",
+          "default": 256,
+          "minimum": 10,
+          "maximum": 10240,
+          "description": "Cache size in MB"
+        },
+        "biomni.performance.cache.ttl": {
+          "type": "number",
+          "default": 3600,
+          "minimum": 300,
+          "maximum": 86400,
+          "description": "Cache time-to-live in seconds"
+        },
+        "biomni.performance.cache.maxFiles": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 10,
+          "maximum": 100000,
+          "description": "Maximum number of files to cache"
+        },
+        "biomni.performance.processing.maxConcurrentJobs": {
+          "type": "number",
+          "default": 4,
+          "minimum": 1,
+          "maximum": 32,
+          "description": "Maximum number of concurrent processing jobs"
+        },
+        "biomni.performance.processing.timeoutDuration": {
+          "type": "number",
+          "default": 300,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "Job timeout duration in seconds"
+        },
+        "biomni.performance.processing.enableParallelProcessing": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable parallel processing for large datasets"
+        },
+        "biomni.performance.processing.chunkSize": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 100,
+          "maximum": 100000,
+          "description": "Chunk size for parallel processing"
+        },
+        "biomni.performance.memory.maxMemoryUsage": {
+          "type": "number",
+          "default": 512,
+          "minimum": 64,
+          "maximum": 8192,
+          "description": "Maximum memory usage in MB"
+        },
+        "biomni.performance.memory.enableGarbageCollection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic garbage collection"
+        },
+        "biomni.performance.memory.gcThreshold": {
+          "type": "number",
+          "default": 256,
+          "minimum": 32,
+          "maximum": 4096,
+          "description": "Memory threshold for garbage collection in MB"
+        },
+        "biomni.security.privacy.enableDataRetention": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable data retention for caching and history"
+        },
+        "biomni.security.privacy.retentionPeriod": {
+          "type": "number",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 365,
+          "description": "Data retention period in days"
+        },
+        "biomni.security.privacy.shareUsageStatistics": {
+          "type": "boolean",
+          "default": false,
+          "description": "Share anonymous usage statistics to improve the extension"
+        },
+        "biomni.security.privacy.enableAuditLogging": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable audit logging for security monitoring"
+        },
+        "biomni.security.external.allowedHosts": {
+          "type": "array",
+          "default": ["ncbi.nlm.nih.gov", "uniprot.org", "ensembl.org"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Allowed hosts for external API calls"
+        },
+        "biomni.security.external.enableSslVerification": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable SSL certificate verification for external connections"
+        },
+        "biomni.security.external.useProxy": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use proxy server for external connections"
+        },
+        "biomni.security.external.proxyUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Proxy server URL (if proxy is enabled)"
+        },
+        "biomni.workflows.templates.defaultWorkflows": {
+          "type": "array",
+          "default": ["sequence-analysis", "variant-calling", "genome-annotation"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Default workflow templates to load"
+        },
+        "biomni.workflows.templates.customWorkflows": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Custom workflow templates created by user"
+        },
+        "biomni.workflows.templates.autoSaveWorkflows": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically save workflow modifications"
+        },
+        "biomni.workflows.execution.defaultEnvironment": {
+          "type": "string",
+          "default": "local",
+          "enum": ["local", "remote", "cloud"],
+          "description": "Default execution environment for workflows"
+        },
+        "biomni.workflows.execution.retryAttempts": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Number of retry attempts for failed workflow steps"
+        },
+        "biomni.workflows.execution.enableLogging": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable detailed logging for workflow execution"
+        },
+        "biomni.workflows.execution.logLevel": {
+          "type": "string",
+          "default": "info",
+          "enum": ["error", "warn", "info", "debug"],
+          "description": "Logging level for workflow execution"
+        },
+        "biomni.internal.settingsVersion": {
+          "type": "string",
+          "default": "0.0.1",
+          "description": "Internal settings schema version (do not modify)"
         }
       }
     }
