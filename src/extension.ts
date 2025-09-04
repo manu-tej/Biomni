@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
 import { BiomniMcpClient } from './biomni/mcpClient';
 import { ExtensionConfig } from './types/config';
+import { FileTypeManager } from './fileTypes';
 
 let mcpClient: BiomniMcpClient | undefined;
+let fileTypeManager: FileTypeManager | undefined;
 
 /**
  * Extension activation function
@@ -14,6 +16,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   try {
     // Get extension configuration
     const config = getExtensionConfig();
+
+    // Initialize file type detection system
+    fileTypeManager = new FileTypeManager();
+    fileTypeManager.initialize(context);
 
     // Initialize MCP client if enabled
     if (config.enabled) {
@@ -27,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Show activation message
     if (config.autoActivate) {
       void vscode.window.showInformationMessage(
-        'Biomni MCP Integration is now active and ready to assist!'
+        'Biomni MCP Integration with Smart File Detection is now active!'
       );
     }
   } catch (error) {
@@ -47,6 +53,12 @@ export async function deactivate(): Promise<void> {
   console.log('Biomni MCP Integration extension is being deactivated');
 
   try {
+    // Clean up file type manager
+    if (fileTypeManager) {
+      fileTypeManager.dispose();
+      fileTypeManager = undefined;
+    }
+
     // Clean up MCP client
     if (mcpClient) {
       await mcpClient.dispose();

@@ -23,6 +23,43 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "fasta",
+        "aliases": ["FASTA", "fasta"],
+        "extensions": [".fasta", ".fa", ".fas", ".seq", ".fna", ".ffn", ".frn"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "fastq",
+        "aliases": ["FASTQ", "fastq"],
+        "extensions": [".fastq", ".fq"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "vcf",
+        "aliases": ["VCF", "vcf"],
+        "extensions": [".vcf"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "fasta",
+        "scopeName": "source.fasta",
+        "path": "./syntaxes/fasta.tmLanguage.json"
+      },
+      {
+        "language": "fastq",
+        "scopeName": "source.fastq",
+        "path": "./syntaxes/fastq.tmLanguage.json"
+      },
+      {
+        "language": "vcf",
+        "scopeName": "source.vcf",
+        "path": "./syntaxes/vcf.tmLanguage.json"
+      }
+    ],
     "commands": [
       {
         "command": "biomni.activate",
@@ -33,8 +70,94 @@
         "command": "biomni.deactivate",
         "title": "Deactivate Biomni MCP Integration",
         "category": "Biomni"
+      },
+      {
+        "command": "biomni.file.validate",
+        "title": "Validate File Format",
+        "category": "Biomni"
+      },
+      {
+        "command": "biomni.file.showInfo",
+        "title": "Show File Info",
+        "category": "Biomni"
+      },
+      {
+        "command": "biomni.file.suggestTools",
+        "title": "Suggest Tools",
+        "category": "Biomni"
+      },
+      {
+        "command": "biomni.fasta.blast",
+        "title": "Run BLAST",
+        "category": "Biomni FASTA"
+      },
+      {
+        "command": "biomni.fasta.align",
+        "title": "Align Sequences",
+        "category": "Biomni FASTA"
+      },
+      {
+        "command": "biomni.fasta.translate",
+        "title": "Translate Sequences",
+        "category": "Biomni FASTA"
+      },
+      {
+        "command": "biomni.fastq.qualityControl",
+        "title": "Quality Control",
+        "category": "Biomni FASTQ"
+      },
+      {
+        "command": "biomni.vcf.annotate",
+        "title": "Annotate Variants",
+        "category": "Biomni VCF"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/",
+          "command": "biomni.fasta.blast",
+          "group": "biomni@1"
+        },
+        {
+          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/",
+          "command": "biomni.fasta.align",
+          "group": "biomni@2"
+        },
+        {
+          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/",
+          "command": "biomni.fasta.translate",
+          "group": "biomni@3"
+        },
+        {
+          "when": "resourceExtname =~ /\\.(fastq|fq)$/",
+          "command": "biomni.fastq.qualityControl",
+          "group": "biomni@1"
+        },
+        {
+          "when": "resourceExtname == .vcf",
+          "command": "biomni.vcf.annotate",
+          "group": "biomni@1"
+        },
+        {
+          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn|fastq|fq|vcf|pdb|gff|gff3|gtf|sam|bam|bed|wig|bw|embl|gb|gbk|sto|stk|nwk|tre|phy|maf|psi)$/",
+          "command": "biomni.file.validate",
+          "group": "biomni@9"
+        },
+        {
+          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn|fastq|fq|vcf|pdb|gff|gff3|gtf|sam|bam|bed|wig|bw|embl|gb|gbk|sto|stk|nwk|tre|phy|maf|psi)$/",
+          "command": "biomni.file.showInfo",
+          "group": "biomni@10"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn|fastq|fq|vcf|pdb|gff|gff3|gtf|sam|bam|bed|wig|bw|embl|gb|gbk|sto|stk|nwk|tre|phy|maf|psi)$/",
+          "command": "biomni.file.suggestTools",
+          "group": "biomni@1"
+        }
+      ]
+    },
     "configuration": {
       "title": "Biomni MCP Integration",
       "properties": {
@@ -52,6 +175,26 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically activate extension on workspace open"
+        },
+        "biomni.showSmartSuggestions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show smart suggestions when opening biological files"
+        },
+        "biomni.showNewFileNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show notifications when biological files are detected"
+        },
+        "biomni.fileDetection.cacheEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable file detection result caching for better performance"
+        },
+        "biomni.fileDetection.maxCacheSize": {
+          "type": "number",
+          "default": 1000,
+          "description": "Maximum number of files to cache detection results for"
         }
       }
     }

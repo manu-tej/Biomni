@@ -1,0 +1,33 @@
+{
+  "name": "FASTQ",
+  "scopeName": "source.fastq",
+  "fileTypes": ["fastq", "fq"],
+  "patterns": [
+    {
+      "name": "meta.header.fastq",
+      "match": "^@.*$",
+      "captures": {
+        "0": {
+          "name": "entity.name.function.fastq"
+        }
+      }
+    },
+    {
+      "name": "string.unquoted.sequence.fastq",
+      "match": "^[ACGTNacgtn]+$"
+    },
+    {
+      "name": "meta.separator.fastq",
+      "match": "^\\+.*$",
+      "captures": {
+        "0": {
+          "name": "punctuation.separator.fastq"
+        }
+      }
+    },
+    {
+      "name": "string.unquoted.quality.fastq",
+      "match": "^[!-~]+$"
+    }
+  ]
+}

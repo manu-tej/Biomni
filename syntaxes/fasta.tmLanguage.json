@@ -1,0 +1,24 @@
+{
+  "name": "FASTA",
+  "scopeName": "source.fasta",
+  "fileTypes": ["fasta", "fa", "fas", "seq", "fna", "ffn", "frn"],
+  "patterns": [
+    {
+      "name": "meta.header.fasta",
+      "match": "^>.*$",
+      "captures": {
+        "0": {
+          "name": "entity.name.function.fasta"
+        }
+      }
+    },
+    {
+      "name": "string.unquoted.sequence.fasta",
+      "match": "^[ACGTUNWSMKRYBDHVacgtunwsmkrybdhv\\-*.]+$"
+    },
+    {
+      "name": "invalid.illegal.character.fasta",
+      "match": "[^ACGTUNWSMKRYBDHVacgtunwsmkrybdhv\\-*.>\\s]"
+    }
+  ]
+}

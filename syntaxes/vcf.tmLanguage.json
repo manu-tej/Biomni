@@ -1,0 +1,50 @@
+{
+  "name": "VCF",
+  "scopeName": "source.vcf",
+  "fileTypes": ["vcf"],
+  "patterns": [
+    {
+      "name": "comment.line.double-hash.vcf",
+      "match": "^##.*$"
+    },
+    {
+      "name": "meta.header.vcf",
+      "match": "^#CHROM.*$",
+      "captures": {
+        "0": {
+          "name": "entity.name.function.vcf"
+        }
+      }
+    },
+    {
+      "name": "meta.data.vcf",
+      "match": "^([^\\t]+)\\t([^\\t]+)\\t([^\\t]+)\\t([^\\t]+)\\t([^\\t]+)\\t([^\\t]+)\\t([^\\t]+)\\t([^\\t]+)",
+      "captures": {
+        "1": {
+          "name": "entity.name.tag.chromosome.vcf"
+        },
+        "2": {
+          "name": "constant.numeric.position.vcf"
+        },
+        "3": {
+          "name": "variable.other.id.vcf"
+        },
+        "4": {
+          "name": "string.unquoted.ref.vcf"
+        },
+        "5": {
+          "name": "string.unquoted.alt.vcf"
+        },
+        "6": {
+          "name": "constant.numeric.quality.vcf"
+        },
+        "7": {
+          "name": "string.unquoted.filter.vcf"
+        },
+        "8": {
+          "name": "string.unquoted.info.vcf"
+        }
+      }
+    }
+  ]
+}
