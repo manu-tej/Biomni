@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { BiomniSettings, DEFAULT_SETTINGS } from './schema';
+import { DEFAULT_SETTINGS } from './schema';
 
 export interface MigrationRule {
   fromVersion: string;
@@ -22,7 +22,6 @@ export interface MigrationResult {
 }
 
 export class SettingsMigrator {
-  private readonly versionKey = 'biomni.internal.settingsVersion';
   private readonly currentVersion: string;
 
   constructor(private readonly context: vscode.ExtensionContext) {
@@ -57,8 +56,7 @@ export class SettingsMigrator {
 
     try {
       // Get current settings
-      const config = vscode.workspace.getConfiguration('biomni');
-      const currentSettings = this.getAllCurrentSettings(config);
+      const currentSettings = this.getAllCurrentSettings();
 
       // Get applicable migration rules
       const migrationRules = this.getMigrationRules(fromVersion, toVersion);
@@ -251,7 +249,7 @@ export class SettingsMigrator {
   /**
    * Get all current settings as flat key-value pairs
    */
-  private getAllCurrentSettings(config: vscode.WorkspaceConfiguration): Record<string, any> {
+  private getAllCurrentSettings(): Record<string, any> {
     const settings: Record<string, any> = {};
     
     // Extract all biomni settings
@@ -326,8 +324,7 @@ export class SettingsMigrator {
    */
   public async backupSettings(): Promise<void> {
     try {
-      const config = vscode.workspace.getConfiguration('biomni');
-      const settings = this.getAllCurrentSettings(config);
+      const settings = this.getAllCurrentSettings();
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       
       // Store backup in global state

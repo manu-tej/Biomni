@@ -17,7 +17,7 @@ export class SecretStorageManager {
   private readonly secretStorage: vscode.SecretStorage;
   private readonly metadataKey = 'biomni_secret_metadata';
 
-  constructor(private readonly context: vscode.ExtensionContext) {
+  constructor(context: vscode.ExtensionContext) {
     this.secretStorage = context.secrets;
   }
 
@@ -254,12 +254,15 @@ export class SecretStorageManager {
       const now = new Date().toISOString();
       
       if (isNew || !metadata[keyName]) {
-        metadata[keyName] = {
+        const newMetadata: SecretMetadata = {
           keyName,
           createdAt: now,
-          updatedAt: now,
-          description
+          updatedAt: now
         };
+        if (description !== undefined) {
+          newMetadata.description = description;
+        }
+        metadata[keyName] = newMetadata;
       } else {
         metadata[keyName] = {
           ...metadata[keyName],

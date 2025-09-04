@@ -26,20 +26,42 @@
     "languages": [
       {
         "id": "fasta",
-        "aliases": ["FASTA", "fasta"],
-        "extensions": [".fasta", ".fa", ".fas", ".seq", ".fna", ".ffn", ".frn"],
+        "aliases": [
+          "FASTA",
+          "fasta"
+        ],
+        "extensions": [
+          ".fasta",
+          ".fa",
+          ".fas",
+          ".seq",
+          ".fna",
+          ".ffn",
+          ".frn"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "fastq",
-        "aliases": ["FASTQ", "fastq"],
-        "extensions": [".fastq", ".fq"],
+        "aliases": [
+          "FASTQ",
+          "fastq"
+        ],
+        "extensions": [
+          ".fastq",
+          ".fq"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "vcf",
-        "aliases": ["VCF", "vcf"],
-        "extensions": [".vcf"],
+        "aliases": [
+          "VCF",
+          "vcf"
+        ],
+        "extensions": [
+          ".vcf"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -64,147 +86,330 @@
       {
         "command": "biomni.activate",
         "title": "Activate Biomni MCP Integration",
-        "category": "Biomni"
+        "category": "Biomni",
+        "icon": "$(play)"
       },
       {
         "command": "biomni.deactivate",
         "title": "Deactivate Biomni MCP Integration",
-        "category": "Biomni"
+        "category": "Biomni",
+        "icon": "$(stop)"
       },
       {
-        "command": "biomni.file.validate",
-        "title": "Validate File Format",
-        "category": "Biomni"
+        "command": "biomni.database.queryUniprot",
+        "title": "Query UniProt Database",
+        "category": "Biomni Database",
+        "shortTitle": "Query UniProt",
+        "icon": "$(database)"
+      },
+      {
+        "command": "biomni.database.queryPDB",
+        "title": "Query Protein Data Bank",
+        "category": "Biomni Database",
+        "shortTitle": "Query PDB",
+        "icon": "$(database)"
+      },
+      {
+        "command": "biomni.database.queryAlphaFold",
+        "title": "Query AlphaFold Database",
+        "category": "Biomni Database",
+        "shortTitle": "Query AlphaFold",
+        "icon": "$(database)"
+      },
+      {
+        "command": "biomni.database.queryInterPro",
+        "title": "Query InterPro Database",
+        "category": "Biomni Database",
+        "shortTitle": "Query InterPro",
+        "icon": "$(database)"
+      },
+      {
+        "command": "biomni.genomics.blastSequence",
+        "title": "BLAST Sequence Search",
+        "category": "Biomni Genomics",
+        "shortTitle": "BLAST Search",
+        "icon": "$(search)"
+      },
+      {
+        "command": "biomni.genomics.annotateScRNA",
+        "title": "Annotate Single Cell RNA-seq",
+        "category": "Biomni Genomics",
+        "shortTitle": "scRNA-seq Annotation",
+        "icon": "$(microscope)"
+      },
+      {
+        "command": "biomni.genomics.liftoverCoordinates",
+        "title": "Liftover Genomic Coordinates",
+        "category": "Biomni Genomics",
+        "shortTitle": "Coordinate Liftover",
+        "icon": "$(arrow-both)"
+      },
+      {
+        "command": "biomni.pharmacology.runDiffDock",
+        "title": "Molecular Docking with DiffDock",
+        "category": "Biomni Pharmacology",
+        "shortTitle": "Molecular Docking",
+        "icon": "$(combine)"
+      },
+      {
+        "command": "biomni.pharmacology.predictADMET",
+        "title": "Predict ADMET Properties",
+        "category": "Biomni Pharmacology",
+        "shortTitle": "ADMET Prediction",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "biomni.systems.fluxBalanceAnalysis",
+        "title": "Flux Balance Analysis",
+        "category": "Biomni Systems Biology",
+        "shortTitle": "FBA",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "biomni.analysis.proteinDisorderRegions",
+        "title": "Predict Protein Disorder Regions",
+        "category": "Biomni Proteomics",
+        "shortTitle": "Protein Disorder",
+        "icon": "$(squiggly)"
+      },
+      {
+        "command": "biomni.analysis.circularDichroism",
+        "title": "Analyze Circular Dichroism Spectra",
+        "category": "Biomni Analysis",
+        "shortTitle": "CD Analysis",
+        "icon": "$(graph-line)"
+      },
+      {
+        "command": "biomni.analysis.cellMigration",
+        "title": "Analyze Cell Migration Metrics",
+        "category": "Biomni Analysis",
+        "shortTitle": "Cell Migration",
+        "icon": "$(location)"
+      },
+      {
+        "command": "biomni.analysis.atacSeq",
+        "title": "ATAC-seq Differential Accessibility",
+        "category": "Biomni Genomics",
+        "shortTitle": "ATAC-seq Analysis",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "biomni.file.validateFormat",
+        "title": "Validate Biological File Format",
+        "category": "Biomni File Operations",
+        "shortTitle": "Validate Format",
+        "icon": "$(check)"
       },
       {
         "command": "biomni.file.showInfo",
-        "title": "Show File Info",
-        "category": "Biomni"
+        "title": "Show File Information",
+        "category": "Biomni File Operations",
+        "shortTitle": "File Info",
+        "icon": "$(info)"
       },
       {
         "command": "biomni.file.suggestTools",
-        "title": "Suggest Tools",
-        "category": "Biomni"
+        "title": "Suggest Analysis Tools",
+        "category": "Biomni File Operations",
+        "shortTitle": "Suggest Tools",
+        "icon": "$(lightbulb)"
       },
       {
-        "command": "biomni.fasta.blast",
-        "title": "Run BLAST",
-        "category": "Biomni FASTA"
+        "command": "biomni.literature.queryArxiv",
+        "title": "Query ArXiv Papers",
+        "category": "Biomni Database",
+        "shortTitle": "ArXiv Search",
+        "icon": "$(book)"
       },
       {
-        "command": "biomni.fasta.align",
-        "title": "Align Sequences",
-        "category": "Biomni FASTA"
-      },
-      {
-        "command": "biomni.fasta.translate",
-        "title": "Translate Sequences",
-        "category": "Biomni FASTA"
-      },
-      {
-        "command": "biomni.fastq.qualityControl",
-        "title": "Quality Control",
-        "category": "Biomni FASTQ"
-      },
-      {
-        "command": "biomni.vcf.annotate",
-        "title": "Annotate Variants",
-        "category": "Biomni VCF"
+        "command": "biomni.support.runPython",
+        "title": "Execute Python Code",
+        "category": "Biomni Analysis",
+        "shortTitle": "Python REPL",
+        "icon": "$(terminal)"
       },
       {
         "command": "biomni.settings.openPanel",
         "title": "Open Settings Panel",
-        "category": "Biomni Settings"
+        "category": "Biomni Settings",
+        "icon": "$(settings-gear)"
       },
       {
         "command": "biomni.settings.export",
         "title": "Export Settings",
-        "category": "Biomni Settings"
+        "category": "Biomni Settings",
+        "icon": "$(export)"
       },
       {
         "command": "biomni.settings.import",
         "title": "Import Settings",
-        "category": "Biomni Settings"
+        "category": "Biomni Settings",
+        "icon": "$(import)"
       },
       {
         "command": "biomni.settings.reset",
         "title": "Reset to Defaults",
-        "category": "Biomni Settings"
+        "category": "Biomni Settings",
+        "icon": "$(discard)"
       },
       {
         "command": "biomni.settings.manageApiKeys",
         "title": "Manage API Keys",
-        "category": "Biomni Settings"
+        "category": "Biomni Settings",
+        "icon": "$(key)"
       },
       {
         "command": "biomni.settings.validateConfiguration",
         "title": "Validate Configuration",
-        "category": "Biomni Settings"
+        "category": "Biomni Settings",
+        "icon": "$(verified)"
       },
       {
         "command": "biomni.mcp.showStatus",
         "title": "Show MCP Server Status",
-        "category": "Biomni MCP"
+        "category": "Biomni MCP",
+        "icon": "$(pulse)"
       },
       {
         "command": "biomni.mcp.listTools",
         "title": "List Available Tools",
-        "category": "Biomni MCP"
+        "category": "Biomni MCP",
+        "icon": "$(tools)"
       },
       {
         "command": "biomni.mcp.testConnection",
         "title": "Test MCP Connection",
-        "category": "Biomni MCP"
+        "category": "Biomni MCP",
+        "icon": "$(plug)"
       },
       {
         "command": "biomni.mcp.refreshTools",
         "title": "Refresh Tool Discovery",
-        "category": "Biomni MCP"
+        "category": "Biomni MCP",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
       "explorer/context": [
         {
           "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/",
-          "command": "biomni.fasta.blast",
+          "command": "biomni.genomics.blastSequence",
           "group": "biomni@1"
         },
         {
-          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/",
-          "command": "biomni.fasta.align",
-          "group": "biomni@2"
-        },
-        {
-          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/",
-          "command": "biomni.fasta.translate",
-          "group": "biomni@3"
-        },
-        {
-          "when": "resourceExtname =~ /\\.(fastq|fq)$/",
-          "command": "biomni.fastq.qualityControl",
+          "when": "resourceExtname =~ /\\.(h5|h5ad|csv|xlsx)$/",
+          "command": "biomni.genomics.annotateScRNA",
           "group": "biomni@1"
         },
         {
-          "when": "resourceExtname == .vcf",
-          "command": "biomni.vcf.annotate",
+          "when": "resourceExtname =~ /\\.(bed|bedgraph|bw|bigwig)$/",
+          "command": "biomni.analysis.atacSeq",
           "group": "biomni@1"
         },
         {
-          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn|fastq|fq|vcf|pdb|gff|gff3|gtf|sam|bam|bed|wig|bw|embl|gb|gbk|sto|stk|nwk|tre|phy|maf|psi)$/",
-          "command": "biomni.file.validate",
+          "when": "resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/",
+          "command": "biomni.file.validateFormat",
+          "group": "biomni@8"
+        },
+        {
+          "when": "resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/",
+          "command": "biomni.file.showInfo",
           "group": "biomni@9"
         },
         {
-          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn|fastq|fq|vcf|pdb|gff|gff3|gtf|sam|bam|bed|wig|bw|embl|gb|gbk|sto|stk|nwk|tre|phy|maf|psi)$/",
-          "command": "biomni.file.showInfo",
+          "when": "resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/",
+          "command": "biomni.file.suggestTools",
           "group": "biomni@10"
         }
       ],
       "editor/context": [
         {
-          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn|fastq|fq|vcf|pdb|gff|gff3|gtf|sam|bam|bed|wig|bw|embl|gb|gbk|sto|stk|nwk|tre|phy|maf|psi)$/",
-          "command": "biomni.file.suggestTools",
+          "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/",
+          "command": "biomni.genomics.blastSequence",
           "group": "biomni@1"
+        },
+        {
+          "when": "resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/",
+          "command": "biomni.file.suggestTools",
+          "group": "biomni@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "biomni.database.queryUniprot",
+          "when": "true"
+        },
+        {
+          "command": "biomni.database.queryPDB",
+          "when": "true"
+        },
+        {
+          "command": "biomni.database.queryAlphaFold",
+          "when": "true"
+        },
+        {
+          "command": "biomni.database.queryInterPro",
+          "when": "true"
+        },
+        {
+          "command": "biomni.genomics.blastSequence",
+          "when": "true"
+        },
+        {
+          "command": "biomni.genomics.annotateScRNA",
+          "when": "true"
+        },
+        {
+          "command": "biomni.genomics.liftoverCoordinates",
+          "when": "true"
+        },
+        {
+          "command": "biomni.pharmacology.runDiffDock",
+          "when": "true"
+        },
+        {
+          "command": "biomni.pharmacology.predictADMET",
+          "when": "true"
+        },
+        {
+          "command": "biomni.systems.fluxBalanceAnalysis",
+          "when": "true"
+        },
+        {
+          "command": "biomni.analysis.proteinDisorderRegions",
+          "when": "true"
+        },
+        {
+          "command": "biomni.analysis.circularDichroism",
+          "when": "true"
+        },
+        {
+          "command": "biomni.analysis.cellMigration",
+          "when": "true"
+        },
+        {
+          "command": "biomni.analysis.atacSeq",
+          "when": "true"
+        },
+        {
+          "command": "biomni.file.validateFormat",
+          "when": "true"
+        },
+        {
+          "command": "biomni.file.showInfo",
+          "when": "true"
+        },
+        {
+          "command": "biomni.file.suggestTools",
+          "when": "true"
+        },
+        {
+          "command": "biomni.literature.queryArxiv",
+          "when": "true"
+        },
+        {
+          "command": "biomni.support.runPython",
+          "when": "true"
         }
       ]
     },
@@ -336,7 +541,14 @@
         "biomni.tools.blast.database": {
           "type": "string",
           "default": "nt",
-          "enum": ["nt", "nr", "refseq_genomic", "refseq_protein", "swissprot", "pdb"],
+          "enum": [
+            "nt",
+            "nr",
+            "refseq_genomic",
+            "refseq_protein",
+            "swissprot",
+            "pdb"
+          ],
           "description": "Default BLAST database for sequence searches"
         },
         "biomni.tools.blast.eValue": {
@@ -368,13 +580,23 @@
         "biomni.tools.alignment.algorithm": {
           "type": "string",
           "default": "muscle",
-          "enum": ["clustalw", "muscle", "mafft", "tcoffee"],
+          "enum": [
+            "clustalw",
+            "muscle",
+            "mafft",
+            "tcoffee"
+          ],
           "description": "Default multiple sequence alignment algorithm"
         },
         "biomni.tools.alignment.format": {
           "type": "string",
           "default": "clustal",
-          "enum": ["clustal", "fasta", "phylip", "nexus"],
+          "enum": [
+            "clustal",
+            "fasta",
+            "phylip",
+            "nexus"
+          ],
           "description": "Output format for sequence alignments"
         },
         "biomni.tools.alignment.gapOpenPenalty": {
@@ -393,7 +615,11 @@
         },
         "biomni.tools.annotation.defaultDatabases": {
           "type": "array",
-          "default": ["uniprot", "go", "kegg"],
+          "default": [
+            "uniprot",
+            "go",
+            "kegg"
+          ],
           "items": {
             "type": "string"
           },
@@ -442,7 +668,12 @@
         "biomni.display.sequences.colorScheme": {
           "type": "string",
           "default": "default",
-          "enum": ["default", "nucleotide", "protein", "hydrophobicity"],
+          "enum": [
+            "default",
+            "nucleotide",
+            "protein",
+            "hydrophobicity"
+          ],
           "description": "Color scheme for sequence visualization"
         },
         "biomni.display.results.maxResultsPerPage": {
@@ -460,7 +691,12 @@
         "biomni.display.results.defaultSortOrder": {
           "type": "string",
           "default": "evalue",
-          "enum": ["relevance", "evalue", "score", "length"],
+          "enum": [
+            "relevance",
+            "evalue",
+            "score",
+            "length"
+          ],
           "description": "Default sorting order for search results"
         },
         "biomni.display.results.enableInteractiveCharts": {
@@ -471,7 +707,11 @@
         "biomni.display.ui.theme": {
           "type": "string",
           "default": "auto",
-          "enum": ["auto", "light", "dark"],
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
           "description": "UI theme preference (auto follows VSCode theme)"
         },
         "biomni.display.ui.fontSize": {
@@ -586,7 +826,11 @@
         },
         "biomni.security.external.allowedHosts": {
           "type": "array",
-          "default": ["ncbi.nlm.nih.gov", "uniprot.org", "ensembl.org"],
+          "default": [
+            "ncbi.nlm.nih.gov",
+            "uniprot.org",
+            "ensembl.org"
+          ],
           "items": {
             "type": "string"
           },
@@ -609,7 +853,11 @@
         },
         "biomni.workflows.templates.defaultWorkflows": {
           "type": "array",
-          "default": ["sequence-analysis", "variant-calling", "genome-annotation"],
+          "default": [
+            "sequence-analysis",
+            "variant-calling",
+            "genome-annotation"
+          ],
           "items": {
             "type": "string"
           },
@@ -631,7 +879,11 @@
         "biomni.workflows.execution.defaultEnvironment": {
           "type": "string",
           "default": "local",
-          "enum": ["local", "remote", "cloud"],
+          "enum": [
+            "local",
+            "remote",
+            "cloud"
+          ],
           "description": "Default execution environment for workflows"
         },
         "biomni.workflows.execution.retryAttempts": {
@@ -649,7 +901,12 @@
         "biomni.workflows.execution.logLevel": {
           "type": "string",
           "default": "info",
-          "enum": ["error", "warn", "info", "debug"],
+          "enum": [
+            "error",
+            "warn",
+            "info",
+            "debug"
+          ],
           "description": "Logging level for workflow execution"
         },
         "biomni.internal.settingsVersion": {
@@ -658,7 +915,29 @@
           "description": "Internal settings schema version (do not modify)"
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "biomni.database.queryUniprot",
+        "key": "ctrl+shift+u",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "biomni.genomics.blastSequence",
+        "key": "ctrl+shift+b",
+        "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/"
+      },
+      {
+        "command": "biomni.pharmacology.runDiffDock",
+        "key": "ctrl+shift+d",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "biomni.file.validateFormat",
+        "key": "ctrl+shift+v",
+        "when": "resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -675,9 +954,10 @@
     "dev": "npm run watch"
   },
   "devDependencies": {
-    "@types/vscode": "^1.90.0",
-    "@types/node": "20.x",
     "@types/jest": "^29.5.12",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.90.0",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vscode/test-electron": "^2.4.0",
@@ -690,7 +970,6 @@
     "ts-jest": "^29.1.2",
     "typescript": "^5.4.5"
   },
-  "dependencies": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/manu-tej/epic-vscode-extension"

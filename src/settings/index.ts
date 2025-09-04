@@ -125,7 +125,7 @@ export class BiomniSettingsService {
     // Validate the new value
     const validationResult = this.validator.validateSettingValue(category, key, value);
     if (!validationResult.isValid) {
-      throw new Error(`Invalid setting value: ${validationResult.errors.join(', ')}`);
+      throw new Error(`Invalid setting value: ${validationResult.error || 'Unknown validation error'}`);
     }
 
     try {
@@ -364,8 +364,9 @@ export class BiomniSettingsService {
     for (const error of errors) {
       // Parse error to extract category and key (basic implementation)
       const match = error.match(/(\w+)\.(\w+)/);
-      if (match) {
-        const [, category, key] = match;
+      if (match && match[1] && match[2]) {
+        const category = match[1];
+        const key = match[2];
         try {
           const defaultValue = this.getDefaultValue(category as keyof BiomniSettings, key);
           if (defaultValue !== undefined) {

@@ -4,10 +4,15 @@ A VSCode extension that integrates Biomni's Model Context Protocol (MCP) capabil
 
 ## Features
 
-- **MCP Integration**: Connect to Biomni MCP servers for enhanced AI assistance
-- **Command Palette**: Easy activation/deactivation through VSCode commands
-- **Configuration**: Flexible settings for server URLs and behavior
-- **TypeScript**: Built with TypeScript for type safety and better development experience
+- **🧬 Comprehensive Command Palette**: 20+ Biomni tools accessible via Ctrl+Shift+P
+- **🔍 Database Integration**: Query UniProt, PDB, AlphaFold, and InterPro databases
+- **🧪 Genomics Analysis**: BLAST searches, sequence analysis, and scRNA-seq annotation
+- **💊 Pharmacology Tools**: Molecular docking and ADMET property prediction
+- **📁 File Format Support**: FASTA, FASTQ, VCF, and other biological file formats
+- **⚡ Context-Sensitive Commands**: Relevant tools appear based on file types
+- **⌨️ Keyboard Shortcuts**: Quick access to frequently used commands
+- **🔧 MCP Integration**: Connect to Biomni MCP servers for enhanced AI assistance
+- **⚙️ Flexible Configuration**: Customizable settings for all tools and behaviors
 
 ## Requirements
 
@@ -32,7 +37,36 @@ A VSCode extension that integrates Biomni's Model Context Protocol (MCP) capabil
 
 ## Usage
 
-### Commands
+### Command Palette Access
+
+Open the command palette with `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS) and type "Biomni" to see all available commands:
+
+#### Quick Access Commands
+- `Ctrl+Shift+U` - Query UniProt Database
+- `Ctrl+Shift+B` - BLAST Sequence Search (context-sensitive)
+- `Ctrl+Shift+D` - Molecular Docking with DiffDock
+- `Ctrl+Shift+V` - Validate File Format (context-sensitive)
+
+#### Database Commands
+- **Query UniProt Database** - Search for protein information
+- **Query Protein Data Bank** - Find protein structures
+- **Query AlphaFold Database** - Get structure predictions
+- **Query InterPro Database** - Search protein domains
+
+#### Genomics Commands
+- **BLAST Sequence Search** - Perform sequence searches
+- **Annotate Single Cell RNA-seq** - Cell type annotation
+- **Liftover Genomic Coordinates** - Convert between genome builds
+- **ATAC-seq Differential Accessibility** - Analyze chromatin data
+
+#### File Operations
+- **Validate File Format** - Check biological file formats
+- **Show File Information** - Display file metadata
+- **Suggest Analysis Tools** - Get tool recommendations
+
+For a complete list of commands and detailed usage, see [Command Palette Documentation](./docs/command-palette.md).
+
+### Extension Management
 
 - `Biomni: Activate MCP Integration` - Manually activate the extension
 - `Biomni: Deactivate MCP Integration` - Manually deactivate the extension

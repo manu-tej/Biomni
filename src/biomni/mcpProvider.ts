@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { McpClientConfig } from '../types/config';
+import { MCPWebSocketManager } from './websocket';
 
 /**
  * Health status for MCP server monitoring
@@ -41,9 +42,51 @@ export class BiomniMCPProvider {
   private serverHealth: HealthStatus | undefined;
   private discoveredTools: ToolInfo[] = [];
   private isServerRunning = false;
+  private wsManager: MCPWebSocketManager | null = null;
 
   constructor(config: McpClientConfig) {
     this.config = config;
+    this.initializeWebSocket();
+  }
+
+  private initializeWebSocket(): void {
+    // Convert HTTP URL to WebSocket URL
+    const wsUrl = this.config.mcpServerUrl.replace(/^http/, 'ws');
+    
+    this.wsManager = new MCPWebSocketManager({
+      url: wsUrl,
+      reconnectInterval: 5000,
+      maxReconnectAttempts: 5,
+      pingInterval: 30000
+    });
+
+    // Set up event handlers
+    this.wsManager.on('connected', () => {
+      console.log('MCP WebSocket connected');
+      this.isServerRunning = true;
+      void this.checkHealth();
+      this.discoverTools();
+    });
+
+    this.wsManager.on('disconnected', () => {
+      console.log('MCP WebSocket disconnected');
+      this.isServerRunning = false;
+      this.serverHealth = {
+        healthy: false,
+        lastCheck: new Date(),
+        errorMessage: 'WebSocket disconnected'
+      };
+      this.didChangeEmitter.fire();
+    });
+
+    this.wsManager.on('error', (error) => {
+      console.error('MCP WebSocket error:', error);
+      vscode.window.showErrorMessage(`MCP connection error: ${error.message}`);
+    });
+
+    this.wsManager.on('notification', (message) => {
+      this.handleNotification(message);
+    });
   }
 
   /**
@@ -168,11 +211,81 @@ export class BiomniMCPProvider {
   }
 
   /**
+   * Handle notifications from MCP server
+   */
+  private handleNotification(message: any): void {
+    console.log('MCP notification received:', message);
+    
+    // Handle different notification types
+    switch (message.method) {
+      case 'tool.added':
+        this.discoveredTools.push(message.params);
+        this.didChangeEmitter.fire();
+        break;
+      
+      case 'tool.removed':
+        this.discoveredTools = this.discoveredTools.filter(
+          tool => tool.name !== message.params.name
+        );
+        this.didChangeEmitter.fire();
+        break;
+      
+      case 'server.status':
+        this.serverHealth = {
+          healthy: message.params.healthy,
+          lastCheck: new Date(),
+          serverVersion: message.params.version,
+          capabilities: message.params.capabilities
+        };
+        this.didChangeEmitter.fire();
+        break;
+      
+      default:
+        console.log('Unknown notification method:', message.method);
+    }
+  }
+
+  /**
+   * Check health of the MCP server
+   */
+  private async checkHealth(): Promise<void> {
+    if (!this.wsManager?.isConnected()) {
+      this.serverHealth = {
+        healthy: false,
+        lastCheck: new Date(),
+        errorMessage: 'Not connected to MCP server'
+      };
+      return;
+    }
+
+    try {
+      const response = await this.wsManager.sendRequest('health');
+      this.serverHealth = {
+        healthy: true,
+        lastCheck: new Date(),
+        serverVersion: response.version,
+        capabilities: response.capabilities
+      };
+    } catch (error) {
+      this.serverHealth = {
+        healthy: false,
+        lastCheck: new Date(),
+        errorMessage: error instanceof Error ? error.message : 'Health check failed'
+      };
+    }
+  }
+
+  /**
    * Stop MCP server and clean up resources
    */
   async stopMCPServer(): Promise<void> {
     try {
       console.log('Stopping Biomni MCP server...');
+      
+      // Disconnect WebSocket
+      if (this.wsManager) {
+        this.wsManager.disconnect();
+      }
       
       this.isServerRunning = false;
       this.serverHealth = undefined;
@@ -259,20 +372,6 @@ export class BiomniMCPProvider {
     return possiblePaths[0]; // Return default path
   }
 
-  /**
-   * Get Biomni Python path for PYTHONPATH
-   */
-  private getBiomniPythonPath(): string {
-    return (process.env['HOME'] || '') + '/Biomni';
-  }
-
-  /**
-   * Get workspace root directory
-   */
-  private getWorkspaceRoot(): string {
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    return workspaceFolder?.uri.fsPath || process.cwd();
-  }
 
   /**
    * Validate that the server can be started

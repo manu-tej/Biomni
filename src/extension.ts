@@ -4,11 +4,14 @@ import { BiomniMCPProvider } from './biomni/mcpProvider';
 import { ExtensionConfig } from './types/config';
 import { FileTypeManager } from './fileTypes';
 import { BiomniSettingsService } from './settings';
+import { BIOMNI_COMMANDS } from './commands';
+import { BiomniCommandHandlers } from './commands/handlers';
 
 let mcpClient: BiomniMcpClient | undefined;
 let mcpProvider: BiomniMCPProvider | undefined;
 let fileTypeManager: FileTypeManager | undefined;
 let settingsService: BiomniSettingsService | undefined;
+let commandHandlers: BiomniCommandHandlers | undefined;
 
 /**
  * Extension activation function
@@ -47,8 +50,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await mcpClient.initialize();
     }
 
-    // Register commands
-    registerCommands(context);
+    // Initialize command handlers
+    commandHandlers = new BiomniCommandHandlers(mcpClient);
+    
+    // Register all Biomni commands
+    registerBiomniCommands(context);
 
     // Show activation message
     if (config.autoActivate) {
@@ -90,6 +96,12 @@ export async function deactivate(): Promise<void> {
       mcpClient = undefined;
     }
 
+    // Clean up command handlers
+    if (commandHandlers) {
+      commandHandlers.dispose();
+      commandHandlers = undefined;
+    }
+
     // Clean up settings service
     if (settingsService) {
       settingsService.dispose();
@@ -104,9 +116,44 @@ export async function deactivate(): Promise<void> {
 }
 
 /**
- * Register extension commands
+ * Register all Biomni commands using the new command system
  */
-function registerCommands(context: vscode.ExtensionContext): void {
+function registerBiomniCommands(context: vscode.ExtensionContext): void {
+  // Register all commands from the BIOMNI_COMMANDS configuration
+  BIOMNI_COMMANDS.forEach(commandDef => {
+    const command = vscode.commands.registerCommand(commandDef.command, async () => {
+      if (!commandHandlers) {
+        void vscode.window.showErrorMessage('Command handlers not initialized');
+        return;
+      }
+
+      try {
+        // Map command identifiers to handler methods
+        const handlerMethodName = commandDef.handler;
+        const handlerMethod = (commandHandlers as any)[handlerMethodName];
+        
+        if (typeof handlerMethod === 'function') {
+          await handlerMethod.call(commandHandlers);
+        } else {
+          void vscode.window.showWarningMessage(`Handler ${handlerMethodName} not implemented yet`);
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        void vscode.window.showErrorMessage(`Command failed: ${errorMsg}`);
+      }
+    });
+    
+    context.subscriptions.push(command);
+  });
+
+  // Also register legacy activate/deactivate commands for backward compatibility
+  registerLegacyCommands(context);
+}
+
+/**
+ * Register legacy extension commands for backward compatibility
+ */
+function registerLegacyCommands(context: vscode.ExtensionContext): void {
   const commands = [
     vscode.commands.registerCommand('biomni.activate', async () => {
       try {
@@ -126,6 +173,11 @@ function registerCommands(context: vscode.ExtensionContext): void {
           // Initialize MCP client
           mcpClient = new BiomniMcpClient(config);
           await mcpClient.initialize();
+          
+          // Update command handlers with new MCP client
+          if (commandHandlers) {
+            commandHandlers.updateMcpClient(mcpClient);
+          }
           
           void vscode.window.showInformationMessage('Biomni MCP Integration activated');
         } else {
@@ -318,18 +370,20 @@ function registerCommands(context: vscode.ExtensionContext): void {
 
         if (uri && uri.length > 0) {
           const selectedUri = uri[0];
-          const fileContent = await vscode.workspace.fs.readFile(selectedUri);
-          const importData = JSON.parse(fileContent.toString());
-          
-          // Ask for confirmation
-          const choice = await vscode.window.showWarningMessage(
-            'This will overwrite your current settings. Continue?',
-            'Yes', 'No'
-          );
-          
-          if (choice === 'Yes') {
-            await settingsService.importSettings(importData);
-            void vscode.window.showInformationMessage('Settings imported successfully');
+          if (selectedUri) {
+            const fileContent = await vscode.workspace.fs.readFile(selectedUri);
+            const importData = JSON.parse(fileContent.toString());
+            
+            // Ask for confirmation
+            const choice = await vscode.window.showWarningMessage(
+              'This will overwrite your current settings. Continue?',
+              'Yes', 'No'
+            );
+            
+            if (choice === 'Yes') {
+              await settingsService.importSettings(importData);
+              void vscode.window.showInformationMessage('Settings imported successfully');
+            }
           }
         }
       } catch (error) {
