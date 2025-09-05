@@ -825,20 +825,6 @@ print(result)
     }
   }
 
-  // === PLACEHOLDER HANDLERS FOR REMAINING COMMANDS ===
-  // Note: These would be implemented similarly with appropriate MCP tool calls
-
-  async handleCircularDichroism(): Promise<void> {
-    void vscode.window.showInformationMessage('Circular Dichroism analysis - Implementation in progress');
-  }
-
-  async handleCellMigration(): Promise<void> {
-    void vscode.window.showInformationMessage('Cell Migration analysis - Implementation in progress');
-  }
-
-  async handleATACSeq(): Promise<void> {
-    void vscode.window.showInformationMessage('ATAC-seq analysis - Implementation in progress');
-  }
 
   async handleValidateFormat(): Promise<void> {
     try {
@@ -1336,13 +1322,6 @@ print(result)
     };
   }
 
-  async handleSuggestTools(): Promise<void> {
-    void vscode.window.showInformationMessage('Tool suggestions - Implementation in progress');
-  }
-
-  async handleQueryArxiv(): Promise<void> {
-    void vscode.window.showInformationMessage('ArXiv query - Implementation in progress');
-  }
 
   async handleRunPython(): Promise<void> {
     if (!this.validateMcpClient()) return;
