@@ -34,7 +34,6 @@
     "onCommand:biomni.genomics.geneOntology",
     "onCommand:biomni.files.validate",
     "onCommand:biomni.files.showInfo",
-    "onCommand:biomni.files.suggestTools"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -188,27 +187,6 @@
         "icon": "$(squiggly)"
       },
       {
-        "command": "biomni.analysis.circularDichroism",
-        "title": "Analyze Circular Dichroism Spectra",
-        "category": "Biomni Analysis",
-        "shortTitle": "CD Analysis",
-        "icon": "$(graph-line)"
-      },
-      {
-        "command": "biomni.analysis.cellMigration",
-        "title": "Analyze Cell Migration Metrics",
-        "category": "Biomni Analysis",
-        "shortTitle": "Cell Migration",
-        "icon": "$(location)"
-      },
-      {
-        "command": "biomni.analysis.atacSeq",
-        "title": "ATAC-seq Differential Accessibility",
-        "category": "Biomni Genomics",
-        "shortTitle": "ATAC-seq Analysis",
-        "icon": "$(diff)"
-      },
-      {
         "command": "biomni.file.validateFormat",
         "title": "Validate Biological File Format",
         "category": "Biomni File Operations",
@@ -221,20 +199,6 @@
         "category": "Biomni File Operations",
         "shortTitle": "File Info",
         "icon": "$(info)"
-      },
-      {
-        "command": "biomni.file.suggestTools",
-        "title": "Suggest Analysis Tools",
-        "category": "Biomni File Operations",
-        "shortTitle": "Suggest Tools",
-        "icon": "$(lightbulb)"
-      },
-      {
-        "command": "biomni.literature.queryArxiv",
-        "title": "Query ArXiv Papers",
-        "category": "Biomni Database",
-        "shortTitle": "ArXiv Search",
-        "icon": "$(book)"
       },
       {
         "command": "biomni.support.runPython",
@@ -322,11 +286,6 @@
           "group": "biomni@1"
         },
         {
-          "when": "resourceExtname =~ /\\.(bed|bedgraph|bw|bigwig)$/",
-          "command": "biomni.analysis.atacSeq",
-          "group": "biomni@1"
-        },
-        {
           "when": "resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/",
           "command": "biomni.file.validateFormat",
           "group": "biomni@8"
@@ -336,11 +295,6 @@
           "command": "biomni.file.showInfo",
           "group": "biomni@9"
         },
-        {
-          "when": "resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/",
-          "command": "biomni.file.suggestTools",
-          "group": "biomni@10"
-        }
       ],
       "editor/context": [
         {
@@ -348,11 +302,6 @@
           "command": "biomni.genomics.blastSequence",
           "group": "biomni@1"
         },
-        {
-          "when": "resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/",
-          "command": "biomni.file.suggestTools",
-          "group": "biomni@2"
-        }
       ],
       "commandPalette": [
         {
@@ -400,31 +349,11 @@
           "when": "true"
         },
         {
-          "command": "biomni.analysis.circularDichroism",
-          "when": "true"
-        },
-        {
-          "command": "biomni.analysis.cellMigration",
-          "when": "true"
-        },
-        {
-          "command": "biomni.analysis.atacSeq",
-          "when": "true"
-        },
-        {
           "command": "biomni.file.validateFormat",
           "when": "true"
         },
         {
           "command": "biomni.file.showInfo",
-          "when": "true"
-        },
-        {
-          "command": "biomni.file.suggestTools",
-          "when": "true"
-        },
-        {
-          "command": "biomni.literature.queryArxiv",
           "when": "true"
         },
         {
