@@ -223,35 +223,6 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     priority: 75
   },
 
-  // === SPECIALIZED ANALYSIS TOOLS (Medium Priority) ===
-  {
-    command: 'biomni.analysis.circularDichroism',
-    title: 'Analyze Circular Dichroism Spectra',
-    category: 'Analysis',
-    description: 'Analyze protein secondary structure from CD spectra',
-    handler: 'handleCircularDichroism',
-    icon: '$(graph-line)',
-    priority: 70
-  },
-  {
-    command: 'biomni.analysis.cellMigration',
-    title: 'Analyze Cell Migration Metrics',
-    category: 'Analysis',
-    description: 'Quantify cell migration and motility patterns',
-    handler: 'handleCellMigration',
-    icon: '$(location)',
-    priority: 65
-  },
-  {
-    command: 'biomni.analysis.atacSeq',
-    title: 'ATAC-seq Differential Accessibility',
-    category: 'Genomics',
-    description: 'Analyze chromatin accessibility changes',
-    when: 'resourceExtname =~ /\\.(bed|bedgraph|bw|bigwig)$/',
-    handler: 'handleATACSeq',
-    icon: '$(diff)',
-    priority: 70
-  },
 
   // === FILE OPERATIONS & UTILITIES (Medium Priority) ===
   {
@@ -275,27 +246,8 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     icon: '$(info)',
     priority: 55
   },
-  {
-    command: 'biomni.file.suggestTools',
-    title: 'Suggest Analysis Tools',
-    category: 'File Operations',
-    description: 'Get tool suggestions based on file type and content',
-    when: 'resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/',
-    handler: 'handleSuggestTools',
-    icon: '$(lightbulb)',
-    priority: 50
-  },
 
   // === LITERATURE & SUPPORT (Lower Priority) ===
-  {
-    command: 'biomni.literature.queryArxiv',
-    title: 'Query ArXiv Papers',
-    category: 'Database',
-    description: 'Search for relevant scientific papers on ArXiv',
-    handler: 'handleQueryArxiv',
-    icon: '$(book)',
-    priority: 45
-  },
   {
     command: 'biomni.support.runPython',
     title: 'Execute Python Code',
