@@ -130,7 +130,9 @@ export class BioFileContextProvider {
       vscode.commands.registerCommand('biomni.file.validate', (uri?: vscode.Uri) => {
         const targetUri = uri ?? vscode.window.activeTextEditor?.document.uri;
         if (!targetUri) {
-          void vscode.window.showWarningMessage('No file selected. Open a file or right-click a file to validate.');
+          void vscode.window.showWarningMessage(
+            'No file selected. Open a file or right-click a file to validate.'
+          );
           return;
         }
         void this.validateFile(targetUri);
@@ -138,7 +140,9 @@ export class BioFileContextProvider {
       vscode.commands.registerCommand('biomni.file.showInfo', (uri?: vscode.Uri) => {
         const targetUri = uri ?? vscode.window.activeTextEditor?.document.uri;
         if (!targetUri) {
-          void vscode.window.showWarningMessage('No file selected. Open a file or right-click a file to show info.');
+          void vscode.window.showWarningMessage(
+            'No file selected. Open a file or right-click a file to show info.'
+          );
           return;
         }
         void this.showFileInfo(targetUri);
@@ -146,7 +150,9 @@ export class BioFileContextProvider {
       vscode.commands.registerCommand('biomni.file.suggestTools', (uri?: vscode.Uri) => {
         const targetUri = uri ?? vscode.window.activeTextEditor?.document.uri;
         if (!targetUri) {
-          void vscode.window.showWarningMessage('No file selected. Open a file or right-click a file for suggestions.');
+          void vscode.window.showWarningMessage(
+            'No file selected. Open a file or right-click a file for suggestions.'
+          );
           return;
         }
         void this.showSmartSuggestions(targetUri);

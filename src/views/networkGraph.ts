@@ -1,260 +1,258 @@
 import * as vscode from 'vscode';
 
 export interface NetworkNode {
-    id: string;
-    label: string;
-    type?: 'gene' | 'protein' | 'metabolite' | 'pathway';
-    x?: number;
-    y?: number;
-    size?: number;
-    color?: string;
-    metadata?: Record<string, any>;
+  id: string;
+  label: string;
+  type?: 'gene' | 'protein' | 'metabolite' | 'pathway';
+  x?: number;
+  y?: number;
+  size?: number;
+  color?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface NetworkEdge {
-    id: string;
-    source: string;
-    target: string;
-    type?: 'activation' | 'inhibition' | 'binding' | 'phosphorylation';
-    weight?: number;
-    color?: string;
-    metadata?: Record<string, any>;
+  id: string;
+  source: string;
+  target: string;
+  type?: 'activation' | 'inhibition' | 'binding' | 'phosphorylation';
+  weight?: number;
+  color?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface NetworkGraphOptions {
-    layout: 'force' | 'circular' | 'hierarchical' | 'grid';
-    nodeSize?: number;
-    edgeWidth?: number;
-    showLabels?: boolean;
-    physics?: boolean;
-    clustering?: boolean;
+  layout: 'force' | 'circular' | 'hierarchical' | 'grid';
+  nodeSize?: number;
+  edgeWidth?: number;
+  showLabels?: boolean;
+  physics?: boolean;
+  clustering?: boolean;
 }
 
 export class NetworkGraphViewer {
-    private panel: vscode.WebviewPanel | undefined;
-    private context: vscode.ExtensionContext;
-    private nodes: NetworkNode[] = [];
-    private edges: NetworkEdge[] = [];
-    private options: NetworkGraphOptions;
+  private panel: vscode.WebviewPanel | undefined;
+  private context: vscode.ExtensionContext;
+  private nodes: NetworkNode[] = [];
+  private edges: NetworkEdge[] = [];
+  private options: NetworkGraphOptions;
 
-    constructor(context: vscode.ExtensionContext) {
-        this.context = context;
-        this.options = {
-            layout: 'force',
-            nodeSize: 10,
-            edgeWidth: 1,
-            showLabels: true,
-            physics: true,
-            clustering: false
-        };
+  constructor(context: vscode.ExtensionContext) {
+    this.context = context;
+    this.options = {
+      layout: 'force',
+      nodeSize: 10,
+      edgeWidth: 1,
+      showLabels: true,
+      physics: true,
+      clustering: false,
+    };
+  }
+
+  public async show(
+    nodes: NetworkNode[],
+    edges: NetworkEdge[],
+    options?: Partial<NetworkGraphOptions>
+  ): Promise<void> {
+    this.nodes = nodes;
+    this.edges = edges;
+    if (options) {
+      this.options = { ...this.options, ...options };
     }
 
-    public async show(
-        nodes: NetworkNode[],
-        edges: NetworkEdge[],
-        options?: Partial<NetworkGraphOptions>
-    ): Promise<void> {
-        this.nodes = nodes;
-        this.edges = edges;
-        if (options) {
-            this.options = { ...this.options, ...options };
+    const columnToShowIn = vscode.window.activeTextEditor?.viewColumn;
+
+    if (this.panel) {
+      this.panel.reveal(columnToShowIn);
+    } else {
+      this.panel = vscode.window.createWebviewPanel(
+        'biomniNetworkGraph',
+        'Network Graph Viewer',
+        columnToShowIn || vscode.ViewColumn.One,
+        {
+          enableScripts: true,
+          retainContextWhenHidden: true,
         }
+      );
 
-        const columnToShowIn = vscode.window.activeTextEditor?.viewColumn;
+      this.panel.webview.html = this.getWebviewContent();
 
-        if (this.panel) {
-            this.panel.reveal(columnToShowIn);
-        } else {
-            this.panel = vscode.window.createWebviewPanel(
-                'biomniNetworkGraph',
-                'Network Graph Viewer',
-                columnToShowIn || vscode.ViewColumn.One,
-                {
-                    enableScripts: true,
-                    retainContextWhenHidden: true
-                }
-            );
+      this.panel.webview.onDidReceiveMessage(
+        message => this.handleMessage(message),
+        undefined,
+        this.context.subscriptions
+      );
 
-            this.panel.webview.html = this.getWebviewContent();
-            
-            this.panel.webview.onDidReceiveMessage(
-                message => this.handleMessage(message),
-                undefined,
-                this.context.subscriptions
-            );
-
-            this.panel.onDidDispose(
-                () => {
-                    this.panel = undefined;
-                },
-                undefined,
-                this.context.subscriptions
-            );
-        }
-
-        // Send network data to webview
-        this.panel.webview.postMessage({
-            command: 'loadNetwork',
-            nodes: this.nodes,
-            edges: this.edges,
-            options: this.options
-        });
+      this.panel.onDidDispose(
+        () => {
+          this.panel = undefined;
+        },
+        undefined,
+        this.context.subscriptions
+      );
     }
 
-    private handleMessage(message: any): void {
-        switch (message.command) {
-            case 'selectNode':
-                this.handleNodeSelection(message.nodeId);
-                break;
-            case 'selectEdge':
-                this.handleEdgeSelection(message.edgeId);
-                break;
-            case 'export':
-                this.exportNetwork(message.format);
-                break;
-            case 'updateLayout':
-                this.updateLayout(message.layout);
-                break;
-            case 'cluster':
-                this.performClustering();
-                break;
-        }
+    // Send network data to webview
+    this.panel.webview.postMessage({
+      command: 'loadNetwork',
+      nodes: this.nodes,
+      edges: this.edges,
+      options: this.options,
+    });
+  }
+
+  private handleMessage(message: any): void {
+    switch (message.command) {
+      case 'selectNode':
+        this.handleNodeSelection(message.nodeId);
+        break;
+      case 'selectEdge':
+        this.handleEdgeSelection(message.edgeId);
+        break;
+      case 'export':
+        this.exportNetwork(message.format);
+        break;
+      case 'updateLayout':
+        this.updateLayout(message.layout);
+        break;
+      case 'cluster':
+        this.performClustering();
+        break;
     }
+  }
 
-    private handleNodeSelection(nodeId: string): void {
-        const node = this.nodes.find(n => n.id === nodeId);
-        if (node) {
-            vscode.window.showInformationMessage(
-                `Selected: ${node.label} (${node.type || 'unknown'})`
-            );
-        }
+  private handleNodeSelection(nodeId: string): void {
+    const node = this.nodes.find(n => n.id === nodeId);
+    if (node) {
+      vscode.window.showInformationMessage(`Selected: ${node.label} (${node.type || 'unknown'})`);
     }
+  }
 
-    private handleEdgeSelection(edgeId: string): void {
-        const edge = this.edges.find(e => e.id === edgeId);
-        if (edge) {
-            const source = this.nodes.find(n => n.id === edge.source);
-            const target = this.nodes.find(n => n.id === edge.target);
-            vscode.window.showInformationMessage(
-                `Edge: ${source?.label} → ${target?.label} (${edge.type || 'interaction'})`
-            );
-        }
+  private handleEdgeSelection(edgeId: string): void {
+    const edge = this.edges.find(e => e.id === edgeId);
+    if (edge) {
+      const source = this.nodes.find(n => n.id === edge.source);
+      const target = this.nodes.find(n => n.id === edge.target);
+      vscode.window.showInformationMessage(
+        `Edge: ${source?.label} → ${target?.label} (${edge.type || 'interaction'})`
+      );
     }
+  }
 
-    private async exportNetwork(format: 'json' | 'graphml' | 'csv' | 'png'): Promise<void> {
-        const uri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file(`network.${format}`),
-            filters: this.getExportFilters(format)
-        });
+  private async exportNetwork(format: 'json' | 'graphml' | 'csv' | 'png'): Promise<void> {
+    const uri = await vscode.window.showSaveDialog({
+      defaultUri: vscode.Uri.file(`network.${format}`),
+      filters: this.getExportFilters(format),
+    });
 
-        if (uri) {
-            let content: string;
-            
-            switch (format) {
-                case 'json':
-                    content = JSON.stringify({ nodes: this.nodes, edges: this.edges }, null, 2);
-                    break;
-                case 'graphml':
-                    content = this.exportToGraphML();
-                    break;
-                case 'csv':
-                    content = this.exportToCSV();
-                    break;
-                case 'png':
-                    // Handle image export through webview
-                    this.panel?.webview.postMessage({
-                        command: 'exportImage',
-                        path: uri.fsPath
-                    });
-                    return;
-                default:
-                    content = '';
-            }
+    if (uri) {
+      let content: string;
 
-            if (content) {
-                await vscode.workspace.fs.writeFile(uri, Buffer.from(content));
-                vscode.window.showInformationMessage(`Network exported to ${uri.fsPath}`);
-            }
-        }
+      switch (format) {
+        case 'json':
+          content = JSON.stringify({ nodes: this.nodes, edges: this.edges }, null, 2);
+          break;
+        case 'graphml':
+          content = this.exportToGraphML();
+          break;
+        case 'csv':
+          content = this.exportToCSV();
+          break;
+        case 'png':
+          // Handle image export through webview
+          this.panel?.webview.postMessage({
+            command: 'exportImage',
+            path: uri.fsPath,
+          });
+          return;
+        default:
+          content = '';
+      }
+
+      if (content) {
+        await vscode.workspace.fs.writeFile(uri, Buffer.from(content));
+        vscode.window.showInformationMessage(`Network exported to ${uri.fsPath}`);
+      }
     }
+  }
 
-    private getExportFilters(format: string): { [name: string]: string[] } {
-        switch (format) {
-            case 'json':
-                return { 'JSON files': ['json'], 'All files': ['*'] };
-            case 'graphml':
-                return { 'GraphML files': ['graphml', 'xml'], 'All files': ['*'] };
-            case 'csv':
-                return { 'CSV files': ['csv'], 'All files': ['*'] };
-            case 'png':
-                return { 'PNG images': ['png'], 'All files': ['*'] };
-            default:
-                return { 'All files': ['*'] };
-        }
+  private getExportFilters(format: string): { [name: string]: string[] } {
+    switch (format) {
+      case 'json':
+        return { 'JSON files': ['json'], 'All files': ['*'] };
+      case 'graphml':
+        return { 'GraphML files': ['graphml', 'xml'], 'All files': ['*'] };
+      case 'csv':
+        return { 'CSV files': ['csv'], 'All files': ['*'] };
+      case 'png':
+        return { 'PNG images': ['png'], 'All files': ['*'] };
+      default:
+        return { 'All files': ['*'] };
     }
+  }
 
-    private exportToGraphML(): string {
-        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-        xml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
-        xml += '  <graph id="G" edgedefault="directed">\n';
-        
-        // Add nodes
-        this.nodes.forEach(node => {
-            xml += `    <node id="${node.id}">\n`;
-            xml += `      <data key="label">${node.label}</data>\n`;
-            if (node.type) {
-                xml += `      <data key="type">${node.type}</data>\n`;
-            }
-            xml += '    </node>\n';
-        });
-        
-        // Add edges
-        this.edges.forEach((edge, index) => {
-            xml += `    <edge id="e${index}" source="${edge.source}" target="${edge.target}">\n`;
-            if (edge.type) {
-                xml += `      <data key="type">${edge.type}</data>\n`;
-            }
-            if (edge.weight !== undefined) {
-                xml += `      <data key="weight">${edge.weight}</data>\n`;
-            }
-            xml += '    </edge>\n';
-        });
-        
-        xml += '  </graph>\n';
-        xml += '</graphml>';
-        
-        return xml;
-    }
+  private exportToGraphML(): string {
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
+    xml += '  <graph id="G" edgedefault="directed">\n';
 
-    private exportToCSV(): string {
-        let csv = 'Source,Target,Type,Weight\n';
-        
-        this.edges.forEach(edge => {
-            const source = this.nodes.find(n => n.id === edge.source);
-            const target = this.nodes.find(n => n.id === edge.target);
-            csv += `"${source?.label || edge.source}","${target?.label || edge.target}","${edge.type || ''}",${edge.weight || 1}\n`;
-        });
-        
-        return csv;
-    }
+    // Add nodes
+    this.nodes.forEach(node => {
+      xml += `    <node id="${node.id}">\n`;
+      xml += `      <data key="label">${node.label}</data>\n`;
+      if (node.type) {
+        xml += `      <data key="type">${node.type}</data>\n`;
+      }
+      xml += '    </node>\n';
+    });
 
-    private updateLayout(layout: string): void {
-        this.options.layout = layout as any;
-        this.panel?.webview.postMessage({
-            command: 'updateLayout',
-            layout: layout
-        });
-    }
+    // Add edges
+    this.edges.forEach((edge, index) => {
+      xml += `    <edge id="e${index}" source="${edge.source}" target="${edge.target}">\n`;
+      if (edge.type) {
+        xml += `      <data key="type">${edge.type}</data>\n`;
+      }
+      if (edge.weight !== undefined) {
+        xml += `      <data key="weight">${edge.weight}</data>\n`;
+      }
+      xml += '    </edge>\n';
+    });
 
-    private performClustering(): void {
-        // Implement clustering algorithm (e.g., Louvain community detection)
-        this.panel?.webview.postMessage({
-            command: 'performClustering'
-        });
-    }
+    xml += '  </graph>\n';
+    xml += '</graphml>';
 
-    private getWebviewContent(): string {
-        return `<!DOCTYPE html>
+    return xml;
+  }
+
+  private exportToCSV(): string {
+    let csv = 'Source,Target,Type,Weight\n';
+
+    this.edges.forEach(edge => {
+      const source = this.nodes.find(n => n.id === edge.source);
+      const target = this.nodes.find(n => n.id === edge.target);
+      csv += `"${source?.label || edge.source}","${target?.label || edge.target}","${edge.type || ''}",${edge.weight || 1}\n`;
+    });
+
+    return csv;
+  }
+
+  private updateLayout(layout: string): void {
+    this.options.layout = layout as any;
+    this.panel?.webview.postMessage({
+      command: 'updateLayout',
+      layout: layout,
+    });
+  }
+
+  private performClustering(): void {
+    // Implement clustering algorithm (e.g., Louvain community detection)
+    this.panel?.webview.postMessage({
+      command: 'performClustering',
+    });
+  }
+
+  private getWebviewContent(): string {
+    return `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
@@ -423,11 +421,11 @@ export class NetworkGraphViewer {
             </script>
         </body>
         </html>`;
-    }
+  }
 
-    public dispose(): void {
-        if (this.panel) {
-            this.panel.dispose();
-        }
+  public dispose(): void {
+    if (this.panel) {
+      this.panel.dispose();
     }
+  }
 }

@@ -7,269 +7,265 @@ import { GenomicsResultsManager } from '../../tools/results/manager';
  * Interactive results webview panel for displaying genomics analysis results
  */
 export class GenomicsResultsPanel {
-    public static currentPanel: GenomicsResultsPanel | undefined;
-    private readonly panel: vscode.WebviewPanel;
-    private disposables: vscode.Disposable[] = [];
+  public static currentPanel: GenomicsResultsPanel | undefined;
+  private readonly panel: vscode.WebviewPanel;
+  private disposables: vscode.Disposable[] = [];
 
-    private constructor(
-        panel: vscode.WebviewPanel,
-        _context: vscode.ExtensionContext,
-        private readonly resultsManager: GenomicsResultsManager
-    ) {
-        this.panel = panel;
-        this.update();
-        
-        // Handle messages from the webview
-        this.panel.webview.onDidReceiveMessage(
-            message => this.handleMessage(message),
-            null,
-            this.disposables
-        );
-        
-        // Clean up when panel is closed
-        this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+  private constructor(
+    panel: vscode.WebviewPanel,
+    _context: vscode.ExtensionContext,
+    private readonly resultsManager: GenomicsResultsManager
+  ) {
+    this.panel = panel;
+    this.update();
+
+    // Handle messages from the webview
+    this.panel.webview.onDidReceiveMessage(
+      message => this.handleMessage(message),
+      null,
+      this.disposables
+    );
+
+    // Clean up when panel is closed
+    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+  }
+
+  /**
+   * Create or show the results panel
+   */
+  public static createOrShow(
+    context: vscode.ExtensionContext,
+    resultsManager: GenomicsResultsManager,
+    result?: BlastResults | AnnotationResults | SequenceAnalysis,
+    resultId?: string
+  ): void {
+    const column = vscode.window.activeTextEditor
+      ? vscode.ViewColumn.Beside
+      : vscode.ViewColumn.One;
+
+    // If we already have a panel, show it
+    if (GenomicsResultsPanel.currentPanel) {
+      GenomicsResultsPanel.currentPanel.panel.reveal(column);
+
+      // Update with new result if provided
+      if (result) {
+        GenomicsResultsPanel.currentPanel.displayResult(result, resultId);
+      }
+      return;
     }
 
-    /**
-     * Create or show the results panel
-     */
-    public static createOrShow(
-        context: vscode.ExtensionContext,
-        resultsManager: GenomicsResultsManager,
-        result?: BlastResults | AnnotationResults | SequenceAnalysis,
-        resultId?: string
-    ): void {
-        const column = vscode.window.activeTextEditor 
-            ? vscode.ViewColumn.Beside 
-            : vscode.ViewColumn.One;
+    // Otherwise, create a new panel
+    const panel = vscode.window.createWebviewPanel(
+      'biomniResults',
+      'Biomni Analysis Results',
+      column,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [
+          vscode.Uri.file(path.join(context.extensionPath, 'out')),
+          vscode.Uri.file(path.join(context.extensionPath, 'resources')),
+        ],
+      }
+    );
 
-        // If we already have a panel, show it
-        if (GenomicsResultsPanel.currentPanel) {
-            GenomicsResultsPanel.currentPanel.panel.reveal(column);
-            
-            // Update with new result if provided
-            if (result) {
-                GenomicsResultsPanel.currentPanel.displayResult(result, resultId);
-            }
-            return;
-        }
+    GenomicsResultsPanel.currentPanel = new GenomicsResultsPanel(panel, context, resultsManager);
 
-        // Otherwise, create a new panel
-        const panel = vscode.window.createWebviewPanel(
-            'biomniResults',
-            'Biomni Analysis Results',
-            column,
-            {
-                enableScripts: true,
-                retainContextWhenHidden: true,
-                localResourceRoots: [
-                    vscode.Uri.file(path.join(context.extensionPath, 'out')),
-                    vscode.Uri.file(path.join(context.extensionPath, 'resources'))
-                ]
-            }
-        );
-
-        GenomicsResultsPanel.currentPanel = new GenomicsResultsPanel(
-            panel, 
-            context, 
-            resultsManager
-        );
-
-        // Display result if provided
-        if (result) {
-            GenomicsResultsPanel.currentPanel.displayResult(result, resultId);
-        }
+    // Display result if provided
+    if (result) {
+      GenomicsResultsPanel.currentPanel.displayResult(result, resultId);
     }
+  }
 
-    /**
-     * Display a specific analysis result
-     */
-    public displayResult(
-        result: BlastResults | AnnotationResults | SequenceAnalysis, 
-        resultId?: string
-    ): void {
-        this.panel.webview.postMessage({
-            command: 'displayResult',
-            result,
-            resultId,
-            type: this.getResultType(result)
-        });
+  /**
+   * Display a specific analysis result
+   */
+  public displayResult(
+    result: BlastResults | AnnotationResults | SequenceAnalysis,
+    resultId?: string
+  ): void {
+    this.panel.webview.postMessage({
+      command: 'displayResult',
+      result,
+      resultId,
+      type: this.getResultType(result),
+    });
+  }
+
+  /**
+   * Show results history
+   */
+  public async showHistory(): Promise<void> {
+    const history = await this.resultsManager.getHistory();
+    this.panel.webview.postMessage({
+      command: 'showHistory',
+      history,
+    });
+  }
+
+  /**
+   * Handle messages from the webview
+   */
+  private async handleMessage(message: any): Promise<void> {
+    switch (message.command) {
+      case 'export':
+        await this.handleExport(message.resultId, message.format);
+        break;
+
+      case 'loadResult':
+        await this.handleLoadResult(message.resultId);
+        break;
+
+      case 'deleteResult':
+        await this.handleDeleteResult(message.resultId);
+        break;
+
+      case 'showHistory':
+        await this.showHistory();
+        break;
+
+      case 'clearCache':
+        await this.handleClearCache();
+        break;
+
+      case 'copySequence':
+        await this.handleCopySequence(message.sequence);
+        break;
+
+      case 'openBlastHit':
+        await this.handleOpenBlastHit(message.hit);
+        break;
     }
+  }
 
-    /**
-     * Show results history
-     */
-    public async showHistory(): Promise<void> {
-        const history = await this.resultsManager.getHistory();
-        this.panel.webview.postMessage({
-            command: 'showHistory',
-            history
-        });
+  /**
+   * Handle export request from webview
+   */
+  private async handleExport(resultId: string, format: string): Promise<void> {
+    try {
+      const result = await this.resultsManager.getResult(resultId);
+      if (!result) {
+        vscode.window.showErrorMessage('Result not found');
+        return;
+      }
+
+      const exportedData = await this.resultsManager.exportResult(result, format as any);
+
+      const uri = await vscode.window.showSaveDialog({
+        defaultUri: vscode.Uri.file(`biomni_result.${format}`),
+        filters: this.getExportFilters(format),
+      });
+
+      if (uri) {
+        await vscode.workspace.fs.writeFile(uri, Buffer.from(exportedData, 'utf8'));
+        vscode.window.showInformationMessage(`Results exported to ${uri.fsPath}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      vscode.window.showErrorMessage(`Export failed: ${errorMessage}`);
     }
+  }
 
-    /**
-     * Handle messages from the webview
-     */
-    private async handleMessage(message: any): Promise<void> {
-        switch (message.command) {
-            case 'export':
-                await this.handleExport(message.resultId, message.format);
-                break;
-                
-            case 'loadResult':
-                await this.handleLoadResult(message.resultId);
-                break;
-                
-            case 'deleteResult':
-                await this.handleDeleteResult(message.resultId);
-                break;
-                
-            case 'showHistory':
-                await this.showHistory();
-                break;
-                
-            case 'clearCache':
-                await this.handleClearCache();
-                break;
-                
-            case 'copySequence':
-                await this.handleCopySequence(message.sequence);
-                break;
-                
-            case 'openBlastHit':
-                await this.handleOpenBlastHit(message.hit);
-                break;
-        }
+  /**
+   * Handle load result request from webview
+   */
+  private async handleLoadResult(resultId: string): Promise<void> {
+    try {
+      const result = await this.resultsManager.getResult(resultId);
+      if (result) {
+        this.displayResult(result, resultId);
+      } else {
+        vscode.window.showErrorMessage('Result not found');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      vscode.window.showErrorMessage(`Failed to load result: ${errorMessage}`);
     }
+  }
 
-    /**
-     * Handle export request from webview
-     */
-    private async handleExport(resultId: string, format: string): Promise<void> {
-        try {
-            const result = await this.resultsManager.getResult(resultId);
-            if (!result) {
-                vscode.window.showErrorMessage('Result not found');
-                return;
-            }
+  /**
+   * Handle delete result request from webview
+   */
+  private async handleDeleteResult(resultId: string): Promise<void> {
+    const confirmed = await vscode.window.showWarningMessage(
+      'Are you sure you want to delete this result?',
+      { modal: true },
+      'Delete'
+    );
 
-            const exportedData = await this.resultsManager.exportResult(result, format as any);
-            
-            const uri = await vscode.window.showSaveDialog({
-                defaultUri: vscode.Uri.file(`biomni_result.${format}`),
-                filters: this.getExportFilters(format)
-            });
-
-            if (uri) {
-                await vscode.workspace.fs.writeFile(uri, Buffer.from(exportedData, 'utf8'));
-                vscode.window.showInformationMessage(`Results exported to ${uri.fsPath}`);
-            }
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            vscode.window.showErrorMessage(`Export failed: ${errorMessage}`);
-        }
+    if (confirmed === 'Delete') {
+      try {
+        await this.resultsManager.removeResult(resultId);
+        await this.showHistory(); // Refresh history view
+        vscode.window.showInformationMessage('Result deleted successfully');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        vscode.window.showErrorMessage(`Failed to delete result: ${errorMessage}`);
+      }
     }
+  }
 
-    /**
-     * Handle load result request from webview
-     */
-    private async handleLoadResult(resultId: string): Promise<void> {
-        try {
-            const result = await this.resultsManager.getResult(resultId);
-            if (result) {
-                this.displayResult(result, resultId);
-            } else {
-                vscode.window.showErrorMessage('Result not found');
-            }
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            vscode.window.showErrorMessage(`Failed to load result: ${errorMessage}`);
-        }
+  /**
+   * Handle clear cache request from webview
+   */
+  private async handleClearCache(): Promise<void> {
+    const confirmed = await vscode.window.showWarningMessage(
+      'Are you sure you want to clear all cached results?',
+      { modal: true },
+      'Clear All'
+    );
+
+    if (confirmed === 'Clear All') {
+      try {
+        await this.resultsManager.clearCache();
+        await this.showHistory(); // Refresh history view
+        vscode.window.showInformationMessage('Cache cleared successfully');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        vscode.window.showErrorMessage(`Failed to clear cache: ${errorMessage}`);
+      }
     }
+  }
 
-    /**
-     * Handle delete result request from webview
-     */
-    private async handleDeleteResult(resultId: string): Promise<void> {
-        const confirmed = await vscode.window.showWarningMessage(
-            'Are you sure you want to delete this result?',
-            { modal: true },
-            'Delete'
-        );
-
-        if (confirmed === 'Delete') {
-            try {
-                await this.resultsManager.removeResult(resultId);
-                await this.showHistory(); // Refresh history view
-                vscode.window.showInformationMessage('Result deleted successfully');
-            } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                vscode.window.showErrorMessage(`Failed to delete result: ${errorMessage}`);
-            }
-        }
+  /**
+   * Handle copy sequence to clipboard
+   */
+  private async handleCopySequence(sequence: string): Promise<void> {
+    try {
+      await vscode.env.clipboard.writeText(sequence);
+      vscode.window.showInformationMessage('Sequence copied to clipboard');
+    } catch (error) {
+      vscode.window.showErrorMessage('Failed to copy sequence to clipboard');
     }
+  }
 
-    /**
-     * Handle clear cache request from webview
-     */
-    private async handleClearCache(): Promise<void> {
-        const confirmed = await vscode.window.showWarningMessage(
-            'Are you sure you want to clear all cached results?',
-            { modal: true },
-            'Clear All'
-        );
+  /**
+   * Handle opening BLAST hit details
+   */
+  private async handleOpenBlastHit(hit: any): Promise<void> {
+    // Create a new document with the hit details
+    const doc = await vscode.workspace.openTextDocument({
+      content: this.formatBlastHitDetails(hit),
+      language: 'plaintext',
+    });
 
-        if (confirmed === 'Clear All') {
-            try {
-                await this.resultsManager.clearCache();
-                await this.showHistory(); // Refresh history view
-                vscode.window.showInformationMessage('Cache cleared successfully');
-            } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                vscode.window.showErrorMessage(`Failed to clear cache: ${errorMessage}`);
-            }
-        }
-    }
+    await vscode.window.showTextDocument(doc);
+  }
 
-    /**
-     * Handle copy sequence to clipboard
-     */
-    private async handleCopySequence(sequence: string): Promise<void> {
-        try {
-            await vscode.env.clipboard.writeText(sequence);
-            vscode.window.showInformationMessage('Sequence copied to clipboard');
-        } catch (error) {
-            vscode.window.showErrorMessage('Failed to copy sequence to clipboard');
-        }
-    }
+  /**
+   * Update the webview content
+   */
+  private update(): void {
+    this.panel.webview.html = this.getWebviewContent();
+  }
 
-    /**
-     * Handle opening BLAST hit details
-     */
-    private async handleOpenBlastHit(hit: any): Promise<void> {
-        // Create a new document with the hit details
-        const doc = await vscode.workspace.openTextDocument({
-            content: this.formatBlastHitDetails(hit),
-            language: 'plaintext'
-        });
-        
-        await vscode.window.showTextDocument(doc);
-    }
+  /**
+   * Generate the HTML content for the webview
+   */
+  private getWebviewContent(): string {
+    const nonce = this.getNonce();
 
-    /**
-     * Update the webview content
-     */
-    private update(): void {
-        this.panel.webview.html = this.getWebviewContent();
-    }
-
-    /**
-     * Generate the HTML content for the webview
-     */
-    private getWebviewContent(): string {
-        const nonce = this.getNonce();
-        
-        return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -817,23 +813,29 @@ export class GenomicsResultsPanel {
     </script>
 </body>
 </html>`;
-    }
+  }
 
-    /**
-     * Get result type for display purposes
-     */
-    private getResultType(result: BlastResults | AnnotationResults | SequenceAnalysis): string {
-        if ('hits' in result) return 'blast';
-        if ('orfs' in result) return 'annotation';
-        if ('composition' in result) return 'analysis';
-        return 'unknown';
+  /**
+   * Get result type for display purposes
+   */
+  private getResultType(result: BlastResults | AnnotationResults | SequenceAnalysis): string {
+    if ('hits' in result) {
+      return 'blast';
     }
+    if ('orfs' in result) {
+      return 'annotation';
+    }
+    if ('composition' in result) {
+      return 'analysis';
+    }
+    return 'unknown';
+  }
 
-    /**
-     * Format BLAST hit details for text document
-     */
-    private formatBlastHitDetails(hit: any): string {
-        return `BLAST Hit Details
+  /**
+   * Format BLAST hit details for text document
+   */
+  private formatBlastHitDetails(hit: any): string {
+    return `BLAST Hit Details
 ===============
 
 ID: ${hit.id}
@@ -858,46 +860,46 @@ ${hit.querySequence || 'Not available'}
 Subject Sequence:
 ${hit.subjectSequence || 'Not available'}
 `;
-    }
+  }
 
-    /**
-     * Get export file filters
-     */
-    private getExportFilters(format: string): Record<string, string[]> {
-        const filters: Record<string, Record<string, string[]>> = {
-            'json': { 'JSON Files': ['json'] },
-            'csv': { 'CSV Files': ['csv'] },
-            'fasta': { 'FASTA Files': ['fasta', 'fa', 'fas'] },
-            'genbank': { 'GenBank Files': ['gb', 'gbk'] }
-        };
+  /**
+   * Get export file filters
+   */
+  private getExportFilters(format: string): Record<string, string[]> {
+    const filters: Record<string, Record<string, string[]>> = {
+      json: { 'JSON Files': ['json'] },
+      csv: { 'CSV Files': ['csv'] },
+      fasta: { 'FASTA Files': ['fasta', 'fa', 'fas'] },
+      genbank: { 'GenBank Files': ['gb', 'gbk'] },
+    };
 
-        return filters[format] || { 'All Files': ['*'] };
-    }
+    return filters[format] || { 'All Files': ['*'] };
+  }
 
-    /**
-     * Generate unique nonce for content security policy
-     */
-    private getNonce(): string {
-        let text = '';
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (let i = 0; i < 32; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
-        }
-        return text;
+  /**
+   * Generate unique nonce for content security policy
+   */
+  private getNonce(): string {
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
+    return text;
+  }
 
-    /**
-     * Dispose of panel resources
-     */
-    private dispose(): void {
-        GenomicsResultsPanel.currentPanel = undefined;
-        this.panel.dispose();
-        
-        while (this.disposables.length) {
-            const disposable = this.disposables.pop();
-            if (disposable) {
-                disposable.dispose();
-            }
-        }
+  /**
+   * Dispose of panel resources
+   */
+  private dispose(): void {
+    GenomicsResultsPanel.currentPanel = undefined;
+    this.panel.dispose();
+
+    while (this.disposables.length) {
+      const disposable = this.disposables.pop();
+      if (disposable) {
+        disposable.dispose();
+      }
     }
+  }
 }

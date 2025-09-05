@@ -148,31 +148,31 @@ export const SETTINGS_SCHEMA = {
             database: {
               type: 'string',
               enum: ['nt', 'nr', 'refseq_genomic', 'refseq_protein', 'swissprot', 'pdb'],
-              default: 'nt'
+              default: 'nt',
             },
             eValue: {
               type: 'number',
               minimum: 0,
               maximum: 1,
-              default: 0.01
+              default: 0.01,
             },
             maxTargetSequences: {
               type: 'number',
               minimum: 1,
               maximum: 10000,
-              default: 500
+              default: 500,
             },
             wordSize: {
               type: 'number',
               minimum: 2,
               maximum: 50,
-              default: 11
+              default: 11,
             },
             customOptions: {
               type: 'string',
-              default: ''
-            }
-          }
+              default: '',
+            },
+          },
         },
         alignment: {
           type: 'object',
@@ -180,28 +180,28 @@ export const SETTINGS_SCHEMA = {
             algorithm: {
               type: 'string',
               enum: ['clustalw', 'muscle', 'mafft', 'tcoffee'],
-              default: 'muscle'
+              default: 'muscle',
             },
             format: {
               type: 'string',
               enum: ['clustal', 'fasta', 'phylip', 'nexus'],
-              default: 'clustal'
+              default: 'clustal',
             },
             gapOpenPenalty: {
               type: 'number',
               minimum: -50,
               maximum: 0,
-              default: -10
+              default: -10,
             },
             gapExtensionPenalty: {
               type: 'number',
               minimum: -50,
               maximum: 0,
-              default: -1
-            }
-          }
-        }
-      }
+              default: -1,
+            },
+          },
+        },
+      },
     },
     display: {
       type: 'object',
@@ -213,28 +213,28 @@ export const SETTINGS_SCHEMA = {
               type: 'number',
               minimum: 100,
               maximum: 1000000,
-              default: 10000
+              default: 10000,
             },
             showLineNumbers: {
               type: 'boolean',
-              default: true
+              default: true,
             },
             wrapLongSequences: {
               type: 'boolean',
-              default: true
+              default: true,
             },
             highlightGcContent: {
               type: 'boolean',
-              default: false
+              default: false,
             },
             colorScheme: {
               type: 'string',
               enum: ['default', 'nucleotide', 'protein', 'hydrophobicity'],
-              default: 'default'
-            }
-          }
-        }
-      }
+              default: 'default',
+            },
+          },
+        },
+      },
     },
     performance: {
       type: 'object',
@@ -244,23 +244,23 @@ export const SETTINGS_SCHEMA = {
           properties: {
             enabled: {
               type: 'boolean',
-              default: true
+              default: true,
             },
             size: {
               type: 'number',
               minimum: 10,
               maximum: 10240,
-              default: 256
+              default: 256,
             },
             ttl: {
               type: 'number',
               minimum: 300,
               maximum: 86400,
-              default: 3600
-            }
-          }
-        }
-      }
+              default: 3600,
+            },
+          },
+        },
+      },
     },
     security: {
       type: 'object',
@@ -270,23 +270,23 @@ export const SETTINGS_SCHEMA = {
           properties: {
             enableDataRetention: {
               type: 'boolean',
-              default: true
+              default: true,
             },
             retentionPeriod: {
               type: 'number',
               minimum: 1,
               maximum: 365,
-              default: 30
+              default: 30,
             },
             shareUsageStatistics: {
               type: 'boolean',
-              default: false
-            }
-          }
-        }
-      }
-    }
-  }
+              default: false,
+            },
+          },
+        },
+      },
+    },
+  },
 } as const;
 
 // Default settings
@@ -297,20 +297,20 @@ export const DEFAULT_SETTINGS: BiomniSettings = {
       eValue: 0.01,
       maxTargetSequences: 500,
       wordSize: 11,
-      customOptions: ''
+      customOptions: '',
     },
     alignment: {
       algorithm: 'muscle',
       format: 'clustal',
       gapOpenPenalty: -10,
-      gapExtensionPenalty: -1
+      gapExtensionPenalty: -1,
     },
     annotation: {
       defaultDatabases: ['uniprot', 'go', 'kegg'],
       includeGeneOntology: true,
       includePathways: true,
-      customAnnotationSources: []
-    }
+      customAnnotationSources: [],
+    },
   },
   display: {
     sequences: {
@@ -318,72 +318,72 @@ export const DEFAULT_SETTINGS: BiomniSettings = {
       showLineNumbers: true,
       wrapLongSequences: true,
       highlightGcContent: false,
-      colorScheme: 'default'
+      colorScheme: 'default',
     },
     results: {
       maxResultsPerPage: 50,
       showThumbnails: true,
       defaultSortOrder: 'evalue',
-      enableInteractiveCharts: true
+      enableInteractiveCharts: true,
     },
     ui: {
       theme: 'auto',
       fontSize: 14,
       showWelcomeScreen: true,
-      enableNotifications: true
-    }
+      enableNotifications: true,
+    },
   },
   performance: {
     cache: {
       enabled: true,
       size: 256,
       ttl: 3600,
-      maxFiles: 1000
+      maxFiles: 1000,
     },
     processing: {
       maxConcurrentJobs: 4,
       timeoutDuration: 300,
       enableParallelProcessing: true,
-      chunkSize: 1000
+      chunkSize: 1000,
     },
     memory: {
       maxMemoryUsage: 512,
       enableGarbageCollection: true,
-      gcThreshold: 256
-    }
+      gcThreshold: 256,
+    },
   },
   security: {
     apiKeys: {
       ncbiApiKeySet: false,
       uniprotApiKeySet: false,
       ensemblApiKeySet: false,
-      customApiKeysSet: []
+      customApiKeysSet: [],
     },
     privacy: {
       enableDataRetention: true,
       retentionPeriod: 30,
       shareUsageStatistics: false,
-      enableAuditLogging: false
+      enableAuditLogging: false,
     },
     external: {
       allowedHosts: ['ncbi.nlm.nih.gov', 'uniprot.org', 'ensembl.org'],
       enableSslVerification: true,
       useProxy: false,
-      proxyUrl: ''
-    }
+      proxyUrl: '',
+    },
   },
   workflows: {
     templates: {
       defaultWorkflows: ['sequence-analysis', 'variant-calling', 'genome-annotation'],
       customWorkflows: [],
-      autoSaveWorkflows: true
+      autoSaveWorkflows: true,
     },
     execution: {
       defaultEnvironment: 'local',
       retryAttempts: 3,
       enableLogging: true,
-      logLevel: 'info'
-    }
+      logLevel: 'info',
+    },
   },
   extension: {
     core: {
@@ -391,7 +391,7 @@ export const DEFAULT_SETTINGS: BiomniSettings = {
       mcpServerUrl: 'http://localhost:8080',
       autoActivate: true,
       debugMode: false,
-      telemetryEnabled: false
+      telemetryEnabled: false,
     },
     fileDetection: {
       enabled: true,
@@ -399,31 +399,31 @@ export const DEFAULT_SETTINGS: BiomniSettings = {
       maxCacheSize: 1000,
       showSmartSuggestions: true,
       showNewFileNotifications: false,
-      autoValidateFiles: true
+      autoValidateFiles: true,
     },
     integration: {
       enableCloudSync: false,
       syncInterval: 30,
       enableCollaboration: false,
-      shareWorkspaceSettings: false
-    }
-  }
+      shareWorkspaceSettings: false,
+    },
+  },
 };
 
 // Settings categories for UI organization
 export const SETTINGS_CATEGORIES = {
   TOOLS: 'Tools Configuration',
-  DISPLAY: 'Display Options', 
+  DISPLAY: 'Display Options',
   PERFORMANCE: 'Performance Settings',
   SECURITY: 'Security & Privacy',
   WORKFLOWS: 'Workflow Management',
-  EXTENSION: 'Extension Settings'
+  EXTENSION: 'Extension Settings',
 } as const;
 
 // Setting keys that require secure storage
 export const SECURE_SETTINGS = [
   'ncbiApiKey',
-  'uniprotApiKey', 
+  'uniprotApiKey',
   'ensemblApiKey',
-  'customApiKeys'
+  'customApiKeys',
 ] as const;

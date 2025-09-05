@@ -33,7 +33,7 @@ export class SettingsMigrator {
    */
   public async migrateIfNeeded(): Promise<MigrationResult | null> {
     const storedVersion = await this.getStoredVersion();
-    
+
     if (!storedVersion || storedVersion === this.currentVersion) {
       return null; // No migration needed
     }
@@ -51,7 +51,7 @@ export class SettingsMigrator {
       fromVersion,
       toVersion,
       changes: [],
-      errors: []
+      errors: [],
     };
 
     try {
@@ -60,7 +60,7 @@ export class SettingsMigrator {
 
       // Get applicable migration rules
       const migrationRules = this.getMigrationRules(fromVersion, toVersion);
-      
+
       if (migrationRules.length === 0) {
         result.success = true;
         result.changes.push('No migration rules applicable');
@@ -70,13 +70,13 @@ export class SettingsMigrator {
 
       // Apply migration rules in order
       let migratedSettings = currentSettings;
-      
+
       for (const rule of migrationRules) {
         try {
           const beforeMigration = JSON.stringify(migratedSettings);
           migratedSettings = rule.migrate(migratedSettings);
           const afterMigration = JSON.stringify(migratedSettings);
-          
+
           if (beforeMigration !== afterMigration) {
             result.changes.push(`Applied: ${rule.description}`);
           }
@@ -95,10 +95,9 @@ export class SettingsMigrator {
 
       // Update version
       await this.updateStoredVersion(toVersion);
-      
+
       result.success = result.errors.length === 0;
       console.log(`Migration completed: ${result.success ? 'Success' : 'With errors'}`);
-      
     } catch (error) {
       const errorMsg = `Migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
       console.error(errorMsg);
@@ -113,11 +112,11 @@ export class SettingsMigrator {
    */
   private getMigrationRules(fromVersion: string, toVersion: string): MigrationRule[] {
     const allRules = this.getAllMigrationRules();
-    
+
     // Filter rules that apply to the version range
-    return allRules.filter(rule => 
-      this.versionInRange(rule.fromVersion, fromVersion, toVersion)
-    ).sort((a, b) => this.compareVersions(a.fromVersion, b.fromVersion));
+    return allRules
+      .filter(rule => this.versionInRange(rule.fromVersion, fromVersion, toVersion))
+      .sort((a, b) => this.compareVersions(a.fromVersion, b.fromVersion));
   }
 
   /**
@@ -132,7 +131,7 @@ export class SettingsMigrator {
         description: 'Migrate basic settings to categorized structure',
         migrate: (settings: any) => {
           const migrated: any = {};
-          
+
           // Migrate old flat structure to new nested structure
           if (settings.enabled !== undefined) {
             migrated['extension.core.enabled'] = settings.enabled;
@@ -144,24 +143,26 @@ export class SettingsMigrator {
             migrated['extension.core.autoActivate'] = settings.autoActivate;
           }
           if (settings.showSmartSuggestions !== undefined) {
-            migrated['extension.fileDetection.showSmartSuggestions'] = settings.showSmartSuggestions;
+            migrated['extension.fileDetection.showSmartSuggestions'] =
+              settings.showSmartSuggestions;
           }
           if (settings.showNewFileNotifications !== undefined) {
-            migrated['extension.fileDetection.showNewFileNotifications'] = settings.showNewFileNotifications;
+            migrated['extension.fileDetection.showNewFileNotifications'] =
+              settings.showNewFileNotifications;
           }
-          
+
           return migrated;
-        }
+        },
       },
 
       // Migration for cache settings restructure
       {
         fromVersion: '0.1.0',
-        toVersion: '0.2.0', 
+        toVersion: '0.2.0',
         description: 'Restructure cache settings and add performance options',
         migrate: (settings: any) => {
           const migrated: any = { ...settings };
-          
+
           // Migrate old cache settings
           if (settings['fileDetection.cacheEnabled'] !== undefined) {
             migrated['performance.cache.enabled'] = settings['fileDetection.cacheEnabled'];
@@ -179,9 +180,9 @@ export class SettingsMigrator {
           if (!migrated['performance.cache.ttl']) {
             migrated['performance.cache.ttl'] = DEFAULT_SETTINGS.performance.cache.ttl;
           }
-          
+
           return migrated;
-        }
+        },
       },
 
       // Migration for security settings introduction
@@ -191,17 +192,19 @@ export class SettingsMigrator {
         description: 'Add security and privacy settings',
         migrate: (settings: any) => {
           const migrated: any = { ...settings };
-          
+
           // Add default security settings
           if (!migrated['security.privacy.enableDataRetention']) {
-            migrated['security.privacy.enableDataRetention'] = DEFAULT_SETTINGS.security.privacy.enableDataRetention;
+            migrated['security.privacy.enableDataRetention'] =
+              DEFAULT_SETTINGS.security.privacy.enableDataRetention;
           }
           if (!migrated['security.privacy.shareUsageStatistics']) {
-            migrated['security.privacy.shareUsageStatistics'] = DEFAULT_SETTINGS.security.privacy.shareUsageStatistics;
+            migrated['security.privacy.shareUsageStatistics'] =
+              DEFAULT_SETTINGS.security.privacy.shareUsageStatistics;
           }
-          
+
           return migrated;
-        }
+        },
       },
 
       // Future migration example for tool settings
@@ -211,7 +214,7 @@ export class SettingsMigrator {
         description: 'Add comprehensive tool configuration settings',
         migrate: (settings: any) => {
           const migrated: any = { ...settings };
-          
+
           // Add default tool settings if not present
           const toolCategories = ['blast', 'alignment', 'annotation'] as const;
           for (const tool of toolCategories) {
@@ -223,10 +226,10 @@ export class SettingsMigrator {
               }
             }
           }
-          
+
           return migrated;
-        }
-      }
+        },
+      },
     ];
   }
 
@@ -251,11 +254,11 @@ export class SettingsMigrator {
    */
   private getAllCurrentSettings(): Record<string, any> {
     const settings: Record<string, any> = {};
-    
+
     // Extract all biomni settings
     const biomniConfig = vscode.workspace.getConfiguration('biomni');
     this.extractSettingsRecursive(biomniConfig, '', settings);
-    
+
     return settings;
   }
 
@@ -265,7 +268,7 @@ export class SettingsMigrator {
   private extractSettingsRecursive(config: any, prefix: string, result: Record<string, any>): void {
     for (const [key, value] of Object.entries(config)) {
       const fullKey = prefix ? `${prefix}.${key}` : key;
-      
+
       if (value && typeof value === 'object' && !Array.isArray(value)) {
         this.extractSettingsRecursive(value, fullKey, result);
       } else {
@@ -279,7 +282,7 @@ export class SettingsMigrator {
    */
   private async applyMigratedSettings(settings: Record<string, any>): Promise<void> {
     const config = vscode.workspace.getConfiguration('biomni');
-    
+
     for (const [key, value] of Object.entries(settings)) {
       try {
         await config.update(key, value, vscode.ConfigurationTarget.Global);
@@ -292,7 +295,11 @@ export class SettingsMigrator {
   /**
    * Check if a version is in range for migration
    */
-  private versionInRange(ruleFromVersion: string, migrationFromVersion: string, migrationToVersion: string): boolean {
+  private versionInRange(
+    ruleFromVersion: string,
+    migrationFromVersion: string,
+    migrationToVersion: string
+  ): boolean {
     return (
       this.compareVersions(ruleFromVersion, migrationFromVersion) >= 0 &&
       this.compareVersions(ruleFromVersion, migrationToVersion) <= 0
@@ -305,17 +312,21 @@ export class SettingsMigrator {
   private compareVersions(version1: string, version2: string): number {
     const v1parts = version1.split('.').map(Number);
     const v2parts = version2.split('.').map(Number);
-    
+
     const maxLength = Math.max(v1parts.length, v2parts.length);
-    
+
     for (let i = 0; i < maxLength; i++) {
       const v1part = v1parts[i] || 0;
       const v2part = v2parts[i] || 0;
-      
-      if (v1part < v2part) return -1;
-      if (v1part > v2part) return 1;
+
+      if (v1part < v2part) {
+        return -1;
+      }
+      if (v1part > v2part) {
+        return 1;
+      }
     }
-    
+
     return 0;
   }
 
@@ -326,17 +337,14 @@ export class SettingsMigrator {
     try {
       const settings = this.getAllCurrentSettings();
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      
+
       // Store backup in global state
-      await this.context.globalState.update(
-        `biomni_settings_backup_${timestamp}`,
-        {
-          version: await this.getStoredVersion(),
-          timestamp,
-          settings
-        }
-      );
-      
+      await this.context.globalState.update(`biomni_settings_backup_${timestamp}`, {
+        version: await this.getStoredVersion(),
+        timestamp,
+        settings,
+      });
+
       console.log('Settings backup created successfully');
     } catch (error) {
       console.error('Failed to backup settings:', error);
@@ -349,7 +357,7 @@ export class SettingsMigrator {
   public getAvailableBackups(): Array<{ key: string; timestamp: string; version: string }> {
     const backups: Array<{ key: string; timestamp: string; version: string }> = [];
     const globalState = this.context.globalState;
-    
+
     for (const key of globalState.keys()) {
       if (key.startsWith('biomni_settings_backup_')) {
         const backupData = globalState.get(key) as any;
@@ -357,12 +365,12 @@ export class SettingsMigrator {
           backups.push({
             key,
             timestamp: backupData.timestamp,
-            version: backupData.version || 'unknown'
+            version: backupData.version || 'unknown',
           });
         }
       }
     }
-    
+
     return backups.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   }
 
@@ -374,7 +382,7 @@ export class SettingsMigrator {
     if (!backupData || !backupData.settings) {
       throw new Error('Invalid backup data');
     }
-    
+
     await this.applyMigratedSettings(backupData.settings);
     console.log(`Settings restored from backup: ${backupKey}`);
   }
@@ -385,11 +393,11 @@ export class SettingsMigrator {
   public async cleanupOldBackups(): Promise<void> {
     const backups = this.getAvailableBackups();
     const backupsToRemove = backups.slice(10); // Keep last 10
-    
+
     for (const backup of backupsToRemove) {
       await this.context.globalState.update(backup.key, undefined);
     }
-    
+
     if (backupsToRemove.length > 0) {
       console.log(`Cleaned up ${backupsToRemove.length} old backup(s)`);
     }

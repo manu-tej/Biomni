@@ -1,8 +1,7 @@
-
 /**
  * Command category types for better organization
  */
-export type CommandCategory = 
+export type CommandCategory =
   | 'Genomics'
   | 'Proteomics'
   | 'Database'
@@ -52,7 +51,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     handler: 'handleQueryUniprot',
     icon: '$(database)',
     priority: 100,
-    keybinding: 'ctrl+shift+u'
+    keybinding: 'ctrl+shift+u',
   },
   {
     command: 'biomni.database.queryPDB',
@@ -61,7 +60,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Search PDB for protein structures and download files',
     handler: 'handleQueryPDB',
     icon: '$(database)',
-    priority: 95
+    priority: 95,
   },
   {
     command: 'biomni.database.queryAlphaFold',
@@ -70,7 +69,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Get AlphaFold protein structure predictions',
     handler: 'handleQueryAlphaFold',
     icon: '$(database)',
-    priority: 90
+    priority: 90,
   },
   {
     command: 'biomni.database.queryInterPro',
@@ -79,7 +78,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Search InterPro for protein domains and families',
     handler: 'handleQueryInterPro',
     icon: '$(database)',
-    priority: 85
+    priority: 85,
   },
 
   // === GENOMICS & SEQUENCE ANALYSIS (High Priority) ===
@@ -92,7 +91,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     handler: 'handleBlastSequence',
     icon: '$(search)',
     priority: 100,
-    keybinding: 'ctrl+shift+b'
+    keybinding: 'ctrl+shift+b',
   },
   {
     command: 'biomni.genomics.annotateGenes',
@@ -103,7 +102,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     handler: 'handleAnnotateGenes',
     icon: '$(gene)',
     priority: 98,
-    keybinding: 'ctrl+shift+a'
+    keybinding: 'ctrl+shift+a',
   },
   {
     command: 'biomni.genomics.analyzeSequence',
@@ -113,7 +112,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     when: 'resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/',
     handler: 'handleAnalyzeSequence',
     icon: '$(graph)',
-    priority: 96
+    priority: 96,
   },
   {
     command: 'biomni.genomics.findORFs',
@@ -123,7 +122,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     when: 'resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/',
     handler: 'handleFindORFs',
     icon: '$(bracket)',
-    priority: 94
+    priority: 94,
   },
   {
     command: 'biomni.genomics.translateSequence',
@@ -133,7 +132,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     when: 'resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/',
     handler: 'handleTranslateSequence',
     icon: '$(arrow-right)',
-    priority: 92
+    priority: 92,
   },
   {
     command: 'biomni.genomics.annotateScRNA',
@@ -143,7 +142,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     when: 'resourceExtname =~ /\\.(h5|h5ad|csv|xlsx)$/',
     handler: 'handleAnnotateScRNA',
     icon: '$(microscope)',
-    priority: 88
+    priority: 88,
   },
   {
     command: 'biomni.genomics.liftoverCoordinates',
@@ -152,7 +151,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Convert coordinates between genome builds',
     handler: 'handleLiftoverCoordinates',
     icon: '$(arrow-both)',
-    priority: 85
+    priority: 85,
   },
   {
     command: 'biomni.genomics.showResults',
@@ -161,7 +160,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'View interactive genomics analysis results',
     handler: 'handleShowResults',
     icon: '$(preview)',
-    priority: 80
+    priority: 80,
   },
   {
     command: 'biomni.genomics.exportResults',
@@ -170,7 +169,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Export results to various formats (CSV, FASTA, GenBank)',
     handler: 'handleExportResults',
     icon: '$(export)',
-    priority: 75
+    priority: 75,
   },
   {
     command: 'biomni.genomics.clearCache',
@@ -179,7 +178,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Clear cached analysis results',
     handler: 'handleClearCache',
     icon: '$(trash)',
-    priority: 60
+    priority: 60,
   },
 
   // === PHARMACOLOGY & DRUG DISCOVERY (High Priority) ===
@@ -191,7 +190,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     handler: 'handleRunDiffDock',
     icon: '$(combine)',
     priority: 90,
-    keybinding: 'ctrl+shift+d'
+    keybinding: 'ctrl+shift+d',
   },
   {
     command: 'biomni.pharmacology.predictADMET',
@@ -200,7 +199,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Predict absorption, distribution, metabolism, excretion, toxicity',
     handler: 'handlePredictADMET',
     icon: '$(beaker)',
-    priority: 85
+    priority: 85,
   },
 
   // === SYSTEMS BIOLOGY & ANALYSIS (Medium-High Priority) ===
@@ -211,7 +210,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Perform FBA on metabolic networks',
     handler: 'handleFluxBalanceAnalysis',
     icon: '$(graph)',
-    priority: 80
+    priority: 80,
   },
   {
     command: 'biomni.analysis.proteinDisorderRegions',
@@ -220,9 +219,8 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Identify intrinsically disordered regions in proteins',
     handler: 'handleProteinDisorderRegions',
     icon: '$(squiggly)',
-    priority: 75
+    priority: 75,
   },
-
 
   // === FILE OPERATIONS & UTILITIES (Medium Priority) ===
   {
@@ -234,7 +232,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     handler: 'handleValidateFormat',
     icon: '$(check)',
     priority: 60,
-    keybinding: 'ctrl+shift+v'
+    keybinding: 'ctrl+shift+v',
   },
   {
     command: 'biomni.file.showInfo',
@@ -244,7 +242,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     when: 'resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/',
     handler: 'handleShowInfo',
     icon: '$(info)',
-    priority: 55
+    priority: 55,
   },
 
   // === LITERATURE & SUPPORT (Lower Priority) ===
@@ -255,7 +253,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Run Python code with Biomni environment',
     handler: 'handleRunPython',
     icon: '$(terminal)',
-    priority: 40
+    priority: 40,
   },
 
   // === MCP & SYSTEM COMMANDS (Lower Priority) ===
@@ -266,7 +264,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Refresh available tools from MCP server',
     handler: 'handleRefreshTools',
     icon: '$(refresh)',
-    priority: 35
+    priority: 35,
   },
 
   // === SETTINGS COMMANDS ===
@@ -277,7 +275,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Add, update, or remove API keys for external services',
     handler: 'handleManageApiKeys',
     icon: '$(key)',
-    priority: 30
+    priority: 30,
   },
   {
     command: 'biomni.settings.validateConfiguration',
@@ -286,7 +284,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Validate current extension configuration',
     handler: 'handleValidateConfiguration',
     icon: '$(verified)',
-    priority: 25
+    priority: 25,
   },
   {
     command: 'biomni.settings.export',
@@ -295,7 +293,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Export current settings to JSON file',
     handler: 'handleExportSettings',
     icon: '$(export)',
-    priority: 20
+    priority: 20,
   },
   {
     command: 'biomni.settings.import',
@@ -304,7 +302,7 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Import settings from JSON file',
     handler: 'handleImportSettings',
     icon: '$(cloud-download)',
-    priority: 20
+    priority: 20,
   },
   {
     command: 'biomni.settings.reset',
@@ -313,8 +311,8 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     description: 'Reset all settings to default values',
     handler: 'handleResetSettings',
     icon: '$(discard)',
-    priority: 15
-  }
+    priority: 15,
+  },
 ];
 
 /**
@@ -336,8 +334,10 @@ export function getCommandsByPriority(): BiomniCommand[] {
  */
 export function getContextualCommands(fileExtension: string): BiomniCommand[] {
   return BIOMNI_COMMANDS.filter(cmd => {
-    if (!cmd.when) return true;
-    
+    if (!cmd.when) {
+      return true;
+    }
+
     // Simple regex matching for file extensions
     const pattern = cmd.when.replace(/resourceExtname =~ \/(.+)\$\//, '$1');
     const regex = new RegExp(pattern);
@@ -369,7 +369,7 @@ export function generateCommandContributions(): any[] {
     title: cmd.title,
     category: `Biomni ${cmd.category}`,
     shortTitle: cmd.title.replace(/^(Biomni\s+)?/, ''),
-    icon: cmd.icon || '$(tools)'
+    icon: cmd.icon || '$(tools)',
   }));
 }
 
@@ -377,13 +377,11 @@ export function generateCommandContributions(): any[] {
  * Generate keybinding contributions for package.json
  */
 export function generateKeybindingContributions(): any[] {
-  return BIOMNI_COMMANDS
-    .filter(cmd => cmd.keybinding)
-    .map(cmd => ({
-      command: cmd.command,
-      key: cmd.keybinding,
-      when: cmd.when || 'editorTextFocus'
-    }));
+  return BIOMNI_COMMANDS.filter(cmd => cmd.keybinding).map(cmd => ({
+    command: cmd.command,
+    key: cmd.keybinding,
+    when: cmd.when || 'editorTextFocus',
+  }));
 }
 
 /**
@@ -392,31 +390,31 @@ export function generateKeybindingContributions(): any[] {
 export function generateMenuContributions(): any {
   const explorerContextMenu: any[] = [];
   const editorContextMenu: any[] = [];
-  
-  BIOMNI_COMMANDS.forEach((cmd) => {
+
+  BIOMNI_COMMANDS.forEach(cmd => {
     if (cmd.when) {
       // Add to explorer context menu
       explorerContextMenu.push({
         when: cmd.when,
         command: cmd.command,
-        group: `biomni@${Math.floor(cmd.priority / 10)}`
+        group: `biomni@${Math.floor(cmd.priority / 10)}`,
       });
-      
+
       // Add to editor context menu
       editorContextMenu.push({
         when: cmd.when,
         command: cmd.command,
-        group: `biomni@${Math.floor(cmd.priority / 10)}`
+        group: `biomni@${Math.floor(cmd.priority / 10)}`,
       });
     }
   });
-  
+
   return {
     'explorer/context': explorerContextMenu,
     'editor/context': editorContextMenu,
-    'commandPalette': BIOMNI_COMMANDS.map(cmd => ({
+    commandPalette: BIOMNI_COMMANDS.map(cmd => ({
       command: cmd.command,
-      when: cmd.when || 'true'
-    }))
+      when: cmd.when || 'true',
+    })),
   };
 }

@@ -15,7 +15,7 @@ export class BiomniSettingsService {
   private readonly validator: SettingsValidator;
   private readonly migrator: SettingsMigrator;
   private readonly configurationTarget: vscode.ConfigurationTarget;
-  
+
   // Event emitters for settings changes
   private readonly _onSettingsChanged = new vscode.EventEmitter<Partial<BiomniSettings>>();
   public readonly onSettingsChanged = this._onSettingsChanged.event;
@@ -28,7 +28,7 @@ export class BiomniSettingsService {
     this.secretStorage = new SecretStorageManager(context);
     this.validator = new SettingsValidator();
     this.migrator = new SettingsMigrator(context);
-    
+
     // Listen for VSCode configuration changes
     vscode.workspace.onDidChangeConfiguration(this.handleConfigurationChange, this);
   }
@@ -37,7 +37,7 @@ export class BiomniSettingsService {
    * Get or create settings service instance
    */
   public static getInstance(
-    context?: vscode.ExtensionContext, 
+    context?: vscode.ExtensionContext,
     target?: vscode.ConfigurationTarget
   ): BiomniSettingsService {
     if (!BiomniSettingsService.instance && context) {
@@ -56,11 +56,11 @@ export class BiomniSettingsService {
     try {
       // Run settings migration if needed
       await this.migrator.migrateIfNeeded();
-      
+
       // Validate current settings
       const currentSettings = await this.getAllSettings();
       const validationResult = this.validator.validateSettings(currentSettings);
-      
+
       if (!validationResult.isValid) {
         console.warn('Settings validation failed:', validationResult.errors);
         // Attempt to fix invalid settings
@@ -81,15 +81,19 @@ export class BiomniSettingsService {
   public async getAllSettings(): Promise<BiomniSettings> {
     const config = vscode.workspace.getConfiguration('biomni');
     const settings = this.mergeWithDefaults(config);
-    
+
     // Populate secure settings from secret storage
     settings.security.apiKeys.ncbiApiKeySet = await this.secretStorage.hasSecret('ncbiApiKey');
-    settings.security.apiKeys.uniprotApiKeySet = await this.secretStorage.hasSecret('uniprotApiKey');
-    settings.security.apiKeys.ensemblApiKeySet = await this.secretStorage.hasSecret('ensemblApiKey');
-    
+    settings.security.apiKeys.uniprotApiKeySet =
+      await this.secretStorage.hasSecret('uniprotApiKey');
+    settings.security.apiKeys.ensemblApiKeySet =
+      await this.secretStorage.hasSecret('ensemblApiKey');
+
     // Get custom API key names
     const customKeys = await this.secretStorage.listSecrets('customApiKey_');
-    settings.security.apiKeys.customApiKeysSet = customKeys.map(key => key.replace('customApiKey_', ''));
+    settings.security.apiKeys.customApiKeysSet = customKeys.map(key =>
+      key.replace('customApiKey_', '')
+    );
 
     return settings;
   }
@@ -102,11 +106,11 @@ export class BiomniSettingsService {
     key?: string
   ): Promise<BiomniSettings[K] | any> {
     const config = vscode.workspace.getConfiguration(`biomni.${category as string}`);
-    
+
     if (key) {
       return config.get(key, this.getDefaultValue(category, key));
     }
-    
+
     const settings = await this.getAllSettings();
     return settings[category];
   }
@@ -122,17 +126,19 @@ export class BiomniSettingsService {
   ): Promise<void> {
     const configTarget = target || this.configurationTarget;
     const configKey = `biomni.${category as string}.${key}`;
-    
+
     // Validate the new value
     const validationResult = this.validator.validateSettingValue(category, key, value);
     if (!validationResult.isValid) {
-      throw new Error(`Invalid setting value: ${validationResult.error || 'Unknown validation error'}`);
+      throw new Error(
+        `Invalid setting value: ${validationResult.error || 'Unknown validation error'}`
+      );
     }
 
     try {
       const config = vscode.workspace.getConfiguration();
       await config.update(configKey, value, configTarget);
-      
+
       console.log(`Setting updated: ${configKey} = ${value}`);
     } catch (error) {
       console.error(`Failed to update setting ${configKey}:`, error);
@@ -148,12 +154,12 @@ export class BiomniSettingsService {
       throw new Error('API key value cannot be empty');
     }
 
-    const secureKeyName = SECURE_SETTINGS.includes(keyName as any) 
-      ? keyName 
+    const secureKeyName = SECURE_SETTINGS.includes(keyName as any)
+      ? keyName
       : `customApiKey_${keyName}`;
 
     await this.secretStorage.storeSecret(secureKeyName, keyValue);
-    
+
     // Update the corresponding boolean flag
     const flagPath = this.getApiKeyFlagPath(keyName);
     if (flagPath) {
@@ -167,10 +173,10 @@ export class BiomniSettingsService {
    * Retrieve an API key
    */
   public async getApiKey(keyName: string): Promise<string | undefined> {
-    const secureKeyName = SECURE_SETTINGS.includes(keyName as any) 
-      ? keyName 
+    const secureKeyName = SECURE_SETTINGS.includes(keyName as any)
+      ? keyName
       : `customApiKey_${keyName}`;
-    
+
     return await this.secretStorage.getSecret(secureKeyName);
   }
 
@@ -196,12 +202,12 @@ export class BiomniSettingsService {
    * Remove an API key
    */
   public async removeApiKey(keyName: string): Promise<void> {
-    const secureKeyName = SECURE_SETTINGS.includes(keyName as any) 
-      ? keyName 
+    const secureKeyName = SECURE_SETTINGS.includes(keyName as any)
+      ? keyName
       : `customApiKey_${keyName}`;
 
     await this.secretStorage.deleteSecret(secureKeyName);
-    
+
     // Update the corresponding boolean flag
     const flagPath = this.getApiKeyFlagPath(keyName);
     if (flagPath) {
@@ -216,17 +222,17 @@ export class BiomniSettingsService {
    */
   public async exportSettings(includeWorkspace: boolean = false): Promise<any> {
     const settings = await this.getAllSettings();
-    
+
     // Remove secure data
     const exportData = JSON.parse(JSON.stringify(settings));
     delete exportData.security.apiKeys;
-    
+
     // Add metadata
     const exportObject = {
       version: this.context.extension?.packageJSON?.version || '1.0.0',
       exportedAt: new Date().toISOString(),
       includeWorkspace,
-      settings: exportData
+      settings: exportData,
     };
 
     return exportObject;
@@ -236,7 +242,7 @@ export class BiomniSettingsService {
    * Import settings from a JSON object
    */
   public async importSettings(
-    importData: any, 
+    importData: any,
     target?: vscode.ConfigurationTarget,
     validate: boolean = true
   ): Promise<void> {
@@ -245,7 +251,7 @@ export class BiomniSettingsService {
     }
 
     const settings = importData.settings as Partial<BiomniSettings>;
-    
+
     if (validate) {
       const validationResult = this.validator.validateSettings(settings);
       if (!validationResult.isValid) {
@@ -276,7 +282,7 @@ export class BiomniSettingsService {
    */
   public async resetToDefaults(category?: keyof BiomniSettings): Promise<void> {
     const config = vscode.workspace.getConfiguration('biomni');
-    
+
     if (category) {
       // Reset specific category
       const defaultCategorySettings = DEFAULT_SETTINGS[category];
@@ -305,7 +311,10 @@ export class BiomniSettingsService {
       return {};
     }
 
-    const workspaceConfig = vscode.workspace.getConfiguration('biomni', vscode.workspace.workspaceFolders[0]);
+    const workspaceConfig = vscode.workspace.getConfiguration(
+      'biomni',
+      vscode.workspace.workspaceFolders[0]
+    );
     return this.mergeWithDefaults(workspaceConfig, true);
   }
 
@@ -317,9 +326,12 @@ export class BiomniSettingsService {
       return false;
     }
 
-    const workspaceConfig = vscode.workspace.getConfiguration('biomni', vscode.workspace.workspaceFolders[0]);
+    const workspaceConfig = vscode.workspace.getConfiguration(
+      'biomni',
+      vscode.workspace.workspaceFolders[0]
+    );
     const inspect = workspaceConfig.inspect('enabled');
-    
+
     return !!(inspect?.workspaceValue !== undefined || inspect?.workspaceFolderValue !== undefined);
   }
 
@@ -337,8 +349,11 @@ export class BiomniSettingsService {
   /**
    * Merge configuration with defaults
    */
-  private mergeWithDefaults(config: vscode.WorkspaceConfiguration, partialOnly: boolean = false): BiomniSettings {
-    const result = partialOnly ? {} as any : JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  private mergeWithDefaults(
+    config: vscode.WorkspaceConfiguration,
+    partialOnly: boolean = false
+  ): BiomniSettings {
+    const result = partialOnly ? ({} as any) : JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 
     // Merge each category
     for (const category of Object.keys(DEFAULT_SETTINGS) as (keyof BiomniSettings)[]) {
@@ -367,9 +382,9 @@ export class BiomniSettingsService {
    */
   private getApiKeyFlagPath(keyName: string): string | undefined {
     const flagMap: Record<string, string> = {
-      'ncbiApiKey': 'apiKeys.ncbiApiKeySet',
-      'uniprotApiKey': 'apiKeys.uniprotApiKeySet',
-      'ensemblApiKey': 'apiKeys.ensemblApiKeySet'
+      ncbiApiKey: 'apiKeys.ncbiApiKeySet',
+      uniprotApiKey: 'apiKeys.uniprotApiKeySet',
+      ensemblApiKey: 'apiKeys.ensemblApiKeySet',
     };
     return flagMap[keyName];
   }
@@ -379,7 +394,7 @@ export class BiomniSettingsService {
    */
   private async fixInvalidSettings(errors: string[]): Promise<void> {
     console.log('Attempting to fix invalid settings:', errors);
-    
+
     for (const error of errors) {
       // Parse error to extract category and key (basic implementation)
       const match = error.match(/(\w+)\.(\w+)/);

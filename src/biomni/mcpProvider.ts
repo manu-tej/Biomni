@@ -52,12 +52,12 @@ export class BiomniMCPProvider {
   private initializeWebSocket(): void {
     // Convert HTTP URL to WebSocket URL
     const wsUrl = this.config.mcpServerUrl.replace(/^http/, 'ws');
-    
+
     this.wsManager = new MCPWebSocketManager({
       url: wsUrl,
       reconnectInterval: 5000,
       maxReconnectAttempts: 5,
-      pingInterval: 30000
+      pingInterval: 30000,
     });
 
     // Set up event handlers
@@ -74,17 +74,17 @@ export class BiomniMCPProvider {
       this.serverHealth = {
         healthy: false,
         lastCheck: new Date(),
-        errorMessage: 'WebSocket disconnected'
+        errorMessage: 'WebSocket disconnected',
       };
       this.didChangeEmitter.fire();
     });
 
-    this.wsManager.on('error', (error) => {
+    this.wsManager.on('error', error => {
       console.error('MCP WebSocket error:', error);
       vscode.window.showErrorMessage(`MCP connection error: ${error.message}`);
     });
 
-    this.wsManager.on('notification', (message) => {
+    this.wsManager.on('notification', message => {
       this.handleNotification(message);
     });
   }
@@ -108,7 +108,7 @@ export class BiomniMCPProvider {
       if (this.config.enabled) {
         // Create a stdio server definition for the Biomni MCP server
         const biomniServerPath = this.getBiomniMCPServerPath();
-        
+
         if (biomniServerPath) {
           // Create server definition - using a simpler approach for now
           const serverDefinition: vscode.McpServerDefinition = {
@@ -123,7 +123,7 @@ export class BiomniMCPProvider {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to provide MCP server definitions:', errorMessage);
-      
+
       // Show error to user but don't prevent other servers from being available
       void vscode.window.showWarningMessage(
         `Biomni MCP Server configuration error: ${errorMessage}`
@@ -144,13 +144,14 @@ export class BiomniMCPProvider {
       if (server.label === 'Biomni MCP Server') {
         // Validate that the server can be started
         const isValid = await this.validateServerSetup();
-        
+
         if (!isValid) {
           const choice = await vscode.window.showErrorMessage(
             'Biomni MCP Server setup is incomplete. Would you like to configure it now?',
-            'Configure', 'Skip'
+            'Configure',
+            'Skip'
           );
-          
+
           if (choice === 'Configure') {
             await this.showConfigurationDialog();
             // Re-validate after configuration
@@ -170,11 +171,9 @@ export class BiomniMCPProvider {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to resolve MCP server definition:', errorMessage);
-      
-      void vscode.window.showErrorMessage(
-        `Failed to configure Biomni MCP Server: ${errorMessage}`
-      );
-      
+
+      void vscode.window.showErrorMessage(`Failed to configure Biomni MCP Server: ${errorMessage}`);
+
       return undefined;
     }
 
@@ -187,22 +186,21 @@ export class BiomniMCPProvider {
   async startMCPServer(): Promise<void> {
     try {
       console.log('Starting Biomni MCP server...');
-      
+
       // The actual server starting is handled by VSCode's MCP system
       // We just need to mark it as running and start health monitoring
       this.isServerRunning = true;
-      
+
       // Start periodic health checks
       await this.startHealthMonitoring();
-      
+
       // Discover available tools
       await this.discoverTools();
-      
+
       console.log('Biomni MCP server started successfully');
-      
+
       // Emit change event to notify VSCode
       this.didChangeEmitter.fire();
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to start MCP server:', errorMessage);
@@ -215,31 +213,31 @@ export class BiomniMCPProvider {
    */
   private handleNotification(message: any): void {
     console.log('MCP notification received:', message);
-    
+
     // Handle different notification types
     switch (message.method) {
       case 'tool.added':
         this.discoveredTools.push(message.params);
         this.didChangeEmitter.fire();
         break;
-      
+
       case 'tool.removed':
         this.discoveredTools = this.discoveredTools.filter(
           tool => tool.name !== message.params.name
         );
         this.didChangeEmitter.fire();
         break;
-      
+
       case 'server.status':
         this.serverHealth = {
           healthy: message.params.healthy,
           lastCheck: new Date(),
           serverVersion: message.params.version,
-          capabilities: message.params.capabilities
+          capabilities: message.params.capabilities,
         };
         this.didChangeEmitter.fire();
         break;
-      
+
       default:
         console.log('Unknown notification method:', message.method);
     }
@@ -253,7 +251,7 @@ export class BiomniMCPProvider {
       this.serverHealth = {
         healthy: false,
         lastCheck: new Date(),
-        errorMessage: 'Not connected to MCP server'
+        errorMessage: 'Not connected to MCP server',
       };
       return;
     }
@@ -264,13 +262,13 @@ export class BiomniMCPProvider {
         healthy: true,
         lastCheck: new Date(),
         serverVersion: response.version,
-        capabilities: response.capabilities
+        capabilities: response.capabilities,
       };
     } catch (error) {
       this.serverHealth = {
         healthy: false,
         lastCheck: new Date(),
-        errorMessage: error instanceof Error ? error.message : 'Health check failed'
+        errorMessage: error instanceof Error ? error.message : 'Health check failed',
       };
     }
   }
@@ -281,21 +279,20 @@ export class BiomniMCPProvider {
   async stopMCPServer(): Promise<void> {
     try {
       console.log('Stopping Biomni MCP server...');
-      
+
       // Disconnect WebSocket
       if (this.wsManager) {
         this.wsManager.disconnect();
       }
-      
+
       this.isServerRunning = false;
       this.serverHealth = undefined;
       this.discoveredTools = [];
-      
+
       console.log('Biomni MCP server stopped successfully');
-      
+
       // Emit change event to notify VSCode
       this.didChangeEmitter.fire();
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to stop MCP server:', errorMessage);
@@ -328,7 +325,7 @@ export class BiomniMCPProvider {
    */
   async updateConfiguration(config: McpClientConfig): Promise<void> {
     this.config = { ...this.config, ...config };
-    
+
     // If server is running and configuration changed, emit change event
     if (this.isServerRunning) {
       this.didChangeEmitter.fire();
@@ -356,7 +353,7 @@ export class BiomniMCPProvider {
       // Workspace relative path
       'biomni_mcp_server.py',
       // Current workspace if it contains the server
-      'run_mcp_server.py'
+      'run_mcp_server.py',
     ];
 
     for (const path of possiblePaths) {
@@ -372,7 +369,6 @@ export class BiomniMCPProvider {
     return possiblePaths[0]; // Return default path
   }
 
-
   /**
    * Validate that the server can be started
    */
@@ -381,7 +377,7 @@ export class BiomniMCPProvider {
       // Check if Python is available
       // Check if Biomni is installed
       // Check if server script exists
-      
+
       // For now, return true - in a real implementation we would do actual validation
       return true;
     } catch (error) {
@@ -396,10 +392,12 @@ export class BiomniMCPProvider {
   private async showConfigurationDialog(): Promise<void> {
     const choice = await vscode.window.showInformationMessage(
       'Biomni MCP Server requires setup. Please ensure:\n' +
-      '1. Python is installed and available in PATH\n' +
-      '2. Biomni is installed (pip install biomni)\n' +
-      '3. The MCP server script is accessible',
-      'Open Settings', 'Documentation', 'OK'
+        '1. Python is installed and available in PATH\n' +
+        '2. Biomni is installed (pip install biomni)\n' +
+        '3. The MCP server script is accessible',
+      'Open Settings',
+      'Documentation',
+      'OK'
     );
 
     if (choice === 'Open Settings') {
@@ -416,7 +414,7 @@ export class BiomniMCPProvider {
     try {
       // Perform initial health check
       await this.performHealthCheck();
-      
+
       // Set up periodic health checks (every 30 seconds)
       const healthCheckInterval = setInterval(async () => {
         if (this.isServerRunning) {
@@ -425,7 +423,6 @@ export class BiomniMCPProvider {
           clearInterval(healthCheckInterval);
         }
       }, 30000);
-      
     } catch (error) {
       console.error('Failed to start health monitoring:', error);
     }
@@ -438,23 +435,22 @@ export class BiomniMCPProvider {
     try {
       // In a real implementation, we would ping the server
       // For now, simulate a successful health check
-      
+
       this.serverHealth = {
         healthy: true,
         lastCheck: new Date(),
         serverVersion: '1.0.0',
-        capabilities: ['tools', 'prompts']
+        capabilities: ['tools', 'prompts'],
       };
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       this.serverHealth = {
         healthy: false,
         lastCheck: new Date(),
-        errorMessage
+        errorMessage,
       };
-      
+
       console.error('Health check failed:', errorMessage);
     }
   }
@@ -466,7 +462,7 @@ export class BiomniMCPProvider {
     try {
       // In a real implementation, we would query the server for available tools
       // For now, simulate some Biomni tools
-      
+
       this.discoveredTools = [
         {
           name: 'blast_search',
@@ -475,10 +471,10 @@ export class BiomniMCPProvider {
             type: 'object',
             properties: {
               sequence: { type: 'string', description: 'Input sequence' },
-              database: { type: 'string', description: 'BLAST database' }
+              database: { type: 'string', description: 'BLAST database' },
             },
-            required: ['sequence']
-          }
+            required: ['sequence'],
+          },
         },
         {
           name: 'sequence_align',
@@ -487,10 +483,10 @@ export class BiomniMCPProvider {
             type: 'object',
             properties: {
               sequences: { type: 'array', description: 'Sequences to align' },
-              algorithm: { type: 'string', description: 'Alignment algorithm' }
+              algorithm: { type: 'string', description: 'Alignment algorithm' },
             },
-            required: ['sequences']
-          }
+            required: ['sequences'],
+          },
         },
         {
           name: 'fetch_sequence',
@@ -499,15 +495,14 @@ export class BiomniMCPProvider {
             type: 'object',
             properties: {
               accession: { type: 'string', description: 'Sequence accession number' },
-              database: { type: 'string', description: 'Source database' }
+              database: { type: 'string', description: 'Source database' },
             },
-            required: ['accession']
-          }
-        }
+            required: ['accession'],
+          },
+        },
       ];
-      
+
       console.log(`Discovered ${this.discoveredTools.length} tools from Biomni MCP server`);
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to discover tools:', errorMessage);

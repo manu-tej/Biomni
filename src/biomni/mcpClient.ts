@@ -118,10 +118,10 @@ export class BiomniMcpClient {
               type: 'object',
               properties: {
                 sequence: { type: 'string', description: 'Input sequence' },
-                database: { type: 'string', description: 'BLAST database' }
+                database: { type: 'string', description: 'BLAST database' },
               },
-              required: ['sequence']
-            }
+              required: ['sequence'],
+            },
           },
           {
             name: 'sequence_align',
@@ -130,10 +130,10 @@ export class BiomniMcpClient {
               type: 'object',
               properties: {
                 sequences: { type: 'array', description: 'Sequences to align' },
-                algorithm: { type: 'string', description: 'Alignment algorithm' }
+                algorithm: { type: 'string', description: 'Alignment algorithm' },
               },
-              required: ['sequences']
-            }
+              required: ['sequences'],
+            },
           },
           {
             name: 'fetch_sequence',
@@ -142,13 +142,13 @@ export class BiomniMcpClient {
               type: 'object',
               properties: {
                 accession: { type: 'string', description: 'Sequence accession number' },
-                database: { type: 'string', description: 'Source database' }
+                database: { type: 'string', description: 'Source database' },
               },
-              required: ['accession']
-            }
-          }
+              required: ['accession'],
+            },
+          },
         ],
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       return this.serverCapabilities;
@@ -190,30 +190,30 @@ export class BiomniMcpClient {
     try {
       // TODO: Implement actual health check communication
       // For now, simulate based on connection status
-      
+
       if (this.isConnected) {
         this.healthStatus = {
           healthy: true,
           lastCheck: new Date(),
           serverVersion: '1.0.0',
-          capabilities: ['tools', 'prompts']
+          capabilities: ['tools', 'prompts'],
         };
       } else {
         this.healthStatus = {
           healthy: false,
           lastCheck: new Date(),
-          errorMessage: 'Not connected to server'
+          errorMessage: 'Not connected to server',
         };
       }
 
       return this.healthStatus;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       this.healthStatus = {
         healthy: false,
         lastCheck: new Date(),
-        errorMessage
+        errorMessage,
       };
 
       return this.healthStatus;
@@ -227,12 +227,12 @@ export class BiomniMcpClient {
     try {
       if (this.isConnected) {
         console.log('Disconnecting from Biomni MCP server...');
-        
+
         // TODO: Implement actual disconnection logic
         this.isConnected = false;
         this.serverCapabilities = undefined;
         this.healthStatus = undefined;
-        
+
         console.log('Disconnected from Biomni MCP server');
       }
     } catch (error) {
@@ -272,7 +272,7 @@ export class BiomniMcpClient {
 
       await this.disconnect();
       this.isInitialized = false;
-      
+
       console.log('Biomni MCP client disposed successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -299,9 +299,9 @@ export class BiomniMcpClient {
               accession: 'NP_001234567',
               description: 'Sample protein sequence',
               evalue: 1e-50,
-              identity: 98.5
-            }
-          ]
+              identity: 98.5,
+            },
+          ],
         };
 
       case 'sequence_align':
@@ -309,9 +309,9 @@ export class BiomniMcpClient {
           algorithm: parameters.algorithm || 'clustalw',
           aligned_sequences: parameters.sequences.map((seq: string, index: number) => ({
             id: `seq_${index + 1}`,
-            aligned: seq.toUpperCase()
+            aligned: seq.toUpperCase(),
           })),
-          alignment_score: 85.2
+          alignment_score: 85.2,
         };
 
       case 'fetch_sequence':
@@ -320,7 +320,7 @@ export class BiomniMcpClient {
           database: parameters.database || 'ncbi',
           sequence: 'ATCGATCGATCGATCG',
           description: `Sequence for ${parameters.accession}`,
-          length: 16
+          length: 16,
         };
 
       default:

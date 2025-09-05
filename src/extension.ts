@@ -23,7 +23,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   console.log('===== BIOMNI EXTENSION ACTIVATION STARTED =====');
   console.log('Extension path:', context.extensionPath);
   console.log('Timestamp:', new Date().toISOString());
-  
+
   try {
     // CRITICAL: Register commands FIRST - this should never fail
     // Initialize command handlers with minimal dependencies
@@ -31,8 +31,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     commandHandlers = new BiomniCommandHandlers(undefined, context);
     console.log('Command handlers created');
     console.log('Command handlers object:', typeof commandHandlers);
-    console.log('handleValidateFormat exists?', typeof (commandHandlers as any).handleValidateFormat);
-    
+    console.log(
+      'handleValidateFormat exists?',
+      typeof (commandHandlers as any).handleValidateFormat
+    );
+
     // Register all commands immediately
     console.log('Starting command registration...');
     registerBiomniCommands(context);
@@ -64,19 +67,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       try {
         // Create MCP provider
         mcpProvider = new BiomniMCPProvider(config);
-        
+
         // Register MCP provider with VSCode language model system
-        const mcpProviderDisposable = vscode.lm.registerMcpServerDefinitionProvider('biomniProvider', {
-          onDidChangeMcpServerDefinitions: mcpProvider.onDidChangeMcpServerDefinitions,
-          provideMcpServerDefinitions: mcpProvider.provideMcpServerDefinitions.bind(mcpProvider),
-          resolveMcpServerDefinition: mcpProvider.resolveMcpServerDefinition.bind(mcpProvider)
-        });
+        const mcpProviderDisposable = vscode.lm.registerMcpServerDefinitionProvider(
+          'biomniProvider',
+          {
+            onDidChangeMcpServerDefinitions: mcpProvider.onDidChangeMcpServerDefinitions,
+            provideMcpServerDefinitions: mcpProvider.provideMcpServerDefinitions.bind(mcpProvider),
+            resolveMcpServerDefinition: mcpProvider.resolveMcpServerDefinition.bind(mcpProvider),
+          }
+        );
         context.subscriptions.push(mcpProviderDisposable);
 
         // Initialize MCP client for direct communication
         mcpClient = new BiomniMcpClient(config);
         await mcpClient.initialize();
-        
+
         // Update command handlers with MCP client
         commandHandlers.updateMcpClient(mcpClient);
         console.log('MCP client initialized');
@@ -97,7 +103,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     console.error('Failed to initialize services:', errorMessage);
     // Note: Commands are still registered even if services fail
   }
-  
+
   console.log('===== BIOMNI EXTENSION ACTIVATION COMPLETE =====');
   console.log(`Total commands registered: ${BIOMNI_COMMANDS.length}`);
 }
@@ -151,7 +157,7 @@ export async function deactivate(): Promise<void> {
  */
 function registerBiomniCommands(context: vscode.ExtensionContext): void {
   console.log(`Registering ${BIOMNI_COMMANDS.length} Biomni commands...`);
-  
+
   // Register all commands from the BIOMNI_COMMANDS configuration
   BIOMNI_COMMANDS.forEach(commandDef => {
     try {
@@ -167,20 +173,22 @@ function registerBiomniCommands(context: vscode.ExtensionContext): void {
           const handlerMethodName = commandDef.handler;
           console.log(`Executing command ${commandDef.command} with handler ${handlerMethodName}`);
           const handlerMethod = (commandHandlers as any)[handlerMethodName];
-          
+
           if (typeof handlerMethod === 'function') {
             console.log(`Calling handler method ${handlerMethodName}`);
             await handlerMethod.call(commandHandlers);
           } else {
             console.error(`Handler ${handlerMethodName} not found on commandHandlers`);
-            void vscode.window.showWarningMessage(`Handler ${handlerMethodName} not implemented yet`);
+            void vscode.window.showWarningMessage(
+              `Handler ${handlerMethodName} not implemented yet`
+            );
           }
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : 'Unknown error';
           void vscode.window.showErrorMessage(`Command failed: ${errorMsg}`);
         }
       });
-      
+
       context.subscriptions.push(command);
       console.log(`Successfully registered: ${commandDef.command}`);
     } catch (error) {
@@ -190,7 +198,7 @@ function registerBiomniCommands(context: vscode.ExtensionContext): void {
 
   // Also register legacy activate/deactivate commands for backward compatibility
   registerLegacyCommands(context);
-  
+
   // Register a simple test command to verify command system works
   const testCommand = vscode.commands.registerCommand('biomni.test', () => {
     console.log('TEST COMMAND EXECUTED');
@@ -213,24 +221,28 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
         if (!mcpClient || !mcpProvider) {
           // Create MCP provider
           mcpProvider = new BiomniMCPProvider(config);
-          
+
           // Register MCP provider with VSCode language model system
-          const mcpProviderDisposable = vscode.lm.registerMcpServerDefinitionProvider('biomniProvider', {
-            onDidChangeMcpServerDefinitions: mcpProvider.onDidChangeMcpServerDefinitions,
-            provideMcpServerDefinitions: mcpProvider.provideMcpServerDefinitions.bind(mcpProvider),
-            resolveMcpServerDefinition: mcpProvider.resolveMcpServerDefinition.bind(mcpProvider)
-          });
+          const mcpProviderDisposable = vscode.lm.registerMcpServerDefinitionProvider(
+            'biomniProvider',
+            {
+              onDidChangeMcpServerDefinitions: mcpProvider.onDidChangeMcpServerDefinitions,
+              provideMcpServerDefinitions:
+                mcpProvider.provideMcpServerDefinitions.bind(mcpProvider),
+              resolveMcpServerDefinition: mcpProvider.resolveMcpServerDefinition.bind(mcpProvider),
+            }
+          );
           context.subscriptions.push(mcpProviderDisposable);
 
           // Initialize MCP client
           mcpClient = new BiomniMcpClient(config);
           await mcpClient.initialize();
-          
+
           // Update command handlers with new MCP client
           if (commandHandlers) {
             commandHandlers.updateMcpClient(mcpClient);
           }
-          
+
           void vscode.window.showInformationMessage('Biomni MCP Integration activated');
         } else {
           void vscode.window.showInformationMessage('Biomni MCP Integration is already active');
@@ -279,7 +291,7 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
           `Client Status: ${clientStatus.connected ? 'Connected' : 'Disconnected'}`,
           `Server URL: ${clientStatus.serverUrl}`,
           `Available Tools: ${tools.length}`,
-          `Last Health Check: ${healthStatus?.lastCheck?.toLocaleTimeString() || 'Never'}`
+          `Last Health Check: ${healthStatus?.lastCheck?.toLocaleTimeString() || 'Never'}`,
         ].join('\n');
 
         void vscode.window.showInformationMessage(statusMessage);
@@ -297,15 +309,13 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
         }
 
         const tools = mcpProvider?.getDiscoveredTools() || mcpClient?.getAvailableTools() || [];
-        
+
         if (tools.length === 0) {
           void vscode.window.showInformationMessage('No tools discovered from MCP server');
           return;
         }
 
-        const toolList = tools.map(tool => 
-          `• ${tool.name}: ${tool.description}`
-        ).join('\n');
+        const toolList = tools.map(tool => `• ${tool.name}: ${tool.description}`).join('\n');
 
         void vscode.window.showInformationMessage(
           `Available Biomni Tools (${tools.length}):\n\n${toolList}`
@@ -324,9 +334,9 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
         }
 
         void vscode.window.showInformationMessage('Testing MCP server connection...');
-        
+
         const healthStatus = await mcpClient.healthCheck();
-        
+
         if (healthStatus.healthy) {
           void vscode.window.showInformationMessage(
             `✅ MCP server connection test successful!\nServer version: ${healthStatus.serverVersion || 'Unknown'}`
@@ -351,7 +361,7 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         void vscode.window.showErrorMessage(`Failed to open settings panel: ${errorMessage}`);
       }
-    })
+    }),
   ];
 
   // Add all commands to context subscriptions
@@ -375,7 +385,7 @@ async function getExtensionConfig(): Promise<ExtensionConfig> {
   }
 
   const extensionSettings = await settingsService.getSetting('extension');
-  
+
   return {
     enabled: extensionSettings.core.enabled,
     mcpServerUrl: extensionSettings.core.mcpServerUrl,

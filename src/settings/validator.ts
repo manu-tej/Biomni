@@ -30,7 +30,10 @@ export class SettingsValidator {
       // Validate each category
       for (const [category, categorySettings] of Object.entries(settings)) {
         if (categorySettings && typeof categorySettings === 'object') {
-          const categoryResult = this.validateCategory(category as keyof BiomniSettings, categorySettings);
+          const categoryResult = this.validateCategory(
+            category as keyof BiomniSettings,
+            categorySettings
+          );
           errors.push(...categoryResult.errors);
           warnings.push(...categoryResult.warnings);
         }
@@ -43,7 +46,6 @@ export class SettingsValidator {
           warnings.push(`Missing configuration category: ${requiredCategory}`);
         }
       }
-
     } catch (error) {
       errors.push(`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -51,7 +53,7 @@ export class SettingsValidator {
     return {
       isValid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -59,8 +61,8 @@ export class SettingsValidator {
    * Validate a specific setting value
    */
   public validateSettingValue(
-    category: keyof BiomniSettings, 
-    key: string, 
+    category: keyof BiomniSettings,
+    key: string,
     value: any
   ): FieldValidationResult {
     try {
@@ -69,7 +71,7 @@ export class SettingsValidator {
       if (!categorySchema) {
         return {
           isValid: false,
-          error: `Unknown settings category: ${category}`
+          error: `Unknown settings category: ${category}`,
         };
       }
 
@@ -78,17 +80,16 @@ export class SettingsValidator {
       if (!fieldSchema) {
         return {
           isValid: false,
-          error: `Unknown setting key: ${category}.${key}`
+          error: `Unknown setting key: ${category}.${key}`,
         };
       }
 
       // Perform type and constraint validation
       return this.validateAgainstSchema(value, fieldSchema, `${category}.${key}`);
-
     } catch (error) {
       return {
         isValid: false,
-        error: `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        error: `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -137,7 +138,7 @@ export class SettingsValidator {
       return {
         isValid: false,
         error: `${fieldPath} must be one of: ${schema.enum.join(', ')}`,
-        suggestion: `Valid options: ${schema.enum.join(', ')}`
+        suggestion: `Valid options: ${schema.enum.join(', ')}`,
       };
     }
 
@@ -147,14 +148,14 @@ export class SettingsValidator {
         return {
           isValid: false,
           error: `${fieldPath} must be at least ${schema.minimum}`,
-          suggestion: `Minimum value: ${schema.minimum}`
+          suggestion: `Minimum value: ${schema.minimum}`,
         };
       }
       if (schema.maximum !== undefined && value > schema.maximum) {
         return {
           isValid: false,
           error: `${fieldPath} must be at most ${schema.maximum}`,
-          suggestion: `Maximum value: ${schema.maximum}`
+          suggestion: `Maximum value: ${schema.maximum}`,
         };
       }
     }
@@ -164,13 +165,13 @@ export class SettingsValidator {
       if (schema.minLength !== undefined && value.length < schema.minLength) {
         return {
           isValid: false,
-          error: `${fieldPath} must be at least ${schema.minLength} characters long`
+          error: `${fieldPath} must be at least ${schema.minLength} characters long`,
         };
       }
       if (schema.maxLength !== undefined && value.length > schema.maxLength) {
         return {
           isValid: false,
-          error: `${fieldPath} must be at most ${schema.maxLength} characters long`
+          error: `${fieldPath} must be at most ${schema.maxLength} characters long`,
         };
       }
       if (schema.pattern) {
@@ -178,7 +179,7 @@ export class SettingsValidator {
         if (!regex.test(value)) {
           return {
             isValid: false,
-            error: `${fieldPath} does not match required pattern`
+            error: `${fieldPath} does not match required pattern`,
           };
         }
       }
@@ -189,13 +190,13 @@ export class SettingsValidator {
       if (schema.minItems !== undefined && value.length < schema.minItems) {
         return {
           isValid: false,
-          error: `${fieldPath} must have at least ${schema.minItems} items`
+          error: `${fieldPath} must have at least ${schema.minItems} items`,
         };
       }
       if (schema.maxItems !== undefined && value.length > schema.maxItems) {
         return {
           isValid: false,
-          error: `${fieldPath} must have at most ${schema.maxItems} items`
+          error: `${fieldPath} must have at most ${schema.maxItems} items`,
         };
       }
     }
@@ -218,14 +219,14 @@ export class SettingsValidator {
     if (expectedType === 'array' && !Array.isArray(value)) {
       return {
         isValid: false,
-        error: `${fieldPath} must be an array`
+        error: `${fieldPath} must be an array`,
       };
     }
 
     if (expectedType !== 'array' && actualType !== expectedType) {
       return {
         isValid: false,
-        error: `${fieldPath} must be of type ${expectedType}, got ${actualType}`
+        error: `${fieldPath} must be of type ${expectedType}, got ${actualType}`,
       };
     }
 
@@ -245,7 +246,7 @@ export class SettingsValidator {
           return {
             isValid: false,
             error: `${fieldPath} must be a valid URL`,
-            suggestion: 'Use format: http://example.com or https://example.com'
+            suggestion: 'Use format: http://example.com or https://example.com',
           };
         }
       }
@@ -258,7 +259,7 @@ export class SettingsValidator {
         if (!emailRegex.test(value)) {
           return {
             isValid: false,
-            error: `${fieldPath} must be a valid email address`
+            error: `${fieldPath} must be a valid email address`,
           };
         }
       }
@@ -272,25 +273,31 @@ export class SettingsValidator {
           return {
             isValid: false,
             error: `${fieldPath} contains invalid path characters`,
-            warning: 'Avoid using ".." or "//" in paths'
+            warning: 'Avoid using ".." or "//" in paths',
           };
         }
       }
     }
 
     // Memory size validation (MB values)
-    if (fieldPath.includes('size') || fieldPath.includes('Size') || fieldPath.includes('memory') || fieldPath.includes('Memory')) {
+    if (
+      fieldPath.includes('size') ||
+      fieldPath.includes('Size') ||
+      fieldPath.includes('memory') ||
+      fieldPath.includes('Memory')
+    ) {
       if (typeof value === 'number') {
         if (value <= 0) {
           return {
             isValid: false,
-            error: `${fieldPath} must be a positive number`
+            error: `${fieldPath} must be a positive number`,
           };
         }
-        if (value > 16384) { // 16GB
+        if (value > 16384) {
+          // 16GB
           return {
             isValid: true,
-            warning: `${fieldPath} is set to a very high value (${value}MB), which may cause performance issues`
+            warning: `${fieldPath} is set to a very high value (${value}MB), which may cause performance issues`,
           };
         }
       }
@@ -302,13 +309,14 @@ export class SettingsValidator {
         if (value <= 0) {
           return {
             isValid: false,
-            error: `${fieldPath} must be a positive number`
+            error: `${fieldPath} must be a positive number`,
           };
         }
-        if (value > 3600) { // 1 hour
+        if (value > 3600) {
+          // 1 hour
           return {
             isValid: true,
-            warning: `${fieldPath} is set to a very high value (${value} seconds)`
+            warning: `${fieldPath} is set to a very high value (${value} seconds)`,
           };
         }
       }
@@ -343,7 +351,7 @@ export class SettingsValidator {
    */
   public getSuggestions(category: keyof BiomniSettings, key: string): string[] {
     const suggestions: string[] = [];
-    
+
     // Get default value
     const defaultValue = this.getDefaultValue(category, key);
     if (defaultValue !== undefined) {
@@ -353,7 +361,7 @@ export class SettingsValidator {
     // Get enum options if available
     const categorySchema = (SETTINGS_SCHEMA.properties as any)[category];
     const fieldSchema = this.getFieldSchema(categorySchema, key);
-    
+
     if (fieldSchema?.enum) {
       suggestions.push(`Valid options: ${fieldSchema.enum.join(', ')}`);
     }

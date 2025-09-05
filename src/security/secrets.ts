@@ -31,7 +31,9 @@ export class SecretStorageManager {
 
     // Validate key name format
     if (!this.isValidKeyName(keyName)) {
-      throw new Error('Invalid key name. Must contain only alphanumeric characters, underscores, and hyphens.');
+      throw new Error(
+        'Invalid key name. Must contain only alphanumeric characters, underscores, and hyphens.'
+      );
     }
 
     try {
@@ -44,7 +46,9 @@ export class SecretStorageManager {
       console.log(`Secret stored successfully: ${keyName}`);
     } catch (error) {
       console.error(`Failed to store secret ${keyName}:`, error);
-      throw new Error(`Failed to store secret: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to store secret: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -91,7 +95,9 @@ export class SecretStorageManager {
       console.log(`Secret deleted successfully: ${keyName}`);
     } catch (error) {
       console.error(`Failed to delete secret ${keyName}:`, error);
-      throw new Error(`Failed to delete secret: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to delete secret: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -102,11 +108,11 @@ export class SecretStorageManager {
     try {
       const metadata = await this.getSecretsMetadata();
       const keyNames = Object.keys(metadata);
-      
+
       if (prefix) {
         return keyNames.filter(name => name.startsWith(prefix));
       }
-      
+
       return keyNames;
     } catch (error) {
       console.error('Failed to list secrets:', error);
@@ -151,7 +157,7 @@ export class SecretStorageManager {
    */
   public async clearAllSecrets(): Promise<void> {
     const secretNames = await this.listSecrets();
-    
+
     for (const secretName of secretNames) {
       try {
         await this.deleteSecret(secretName);
@@ -173,7 +179,10 @@ export class SecretStorageManager {
   /**
    * Validate API key format (basic validation)
    */
-  public validateApiKey(keyValue: string, keyType?: string): { isValid: boolean; errors: string[] } {
+  public validateApiKey(
+    keyValue: string,
+    keyType?: string
+  ): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     if (!keyValue || keyValue.trim().length === 0) {
@@ -207,7 +216,7 @@ export class SecretStorageManager {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -248,16 +257,20 @@ export class SecretStorageManager {
   /**
    * Update metadata for a secret
    */
-  private async updateSecretMetadata(keyName: string, description?: string, isNew: boolean = true): Promise<void> {
+  private async updateSecretMetadata(
+    keyName: string,
+    description?: string,
+    isNew: boolean = true
+  ): Promise<void> {
     try {
       const metadata = await this.getSecretsMetadata();
       const now = new Date().toISOString();
-      
+
       if (isNew || !metadata[keyName]) {
         const newMetadata: SecretMetadata = {
           keyName,
           createdAt: now,
-          updatedAt: now
+          updatedAt: now,
         };
         if (description !== undefined) {
           newMetadata.description = description;
@@ -267,7 +280,7 @@ export class SecretStorageManager {
         metadata[keyName] = {
           ...metadata[keyName],
           updatedAt: now,
-          ...(description !== undefined && { description })
+          ...(description !== undefined && { description }),
         };
       }
 

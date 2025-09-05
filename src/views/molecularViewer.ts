@@ -2,139 +2,137 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 export interface MolecularViewerOptions {
-    format: 'pdb' | 'mmcif' | 'mol2' | 'sdf';
-    backgroundColor?: string;
-    atomColors?: Record<string, string>;
-    showLabels?: boolean;
-    showBonds?: boolean;
-    showRibbon?: boolean;
+  format: 'pdb' | 'mmcif' | 'mol2' | 'sdf';
+  backgroundColor?: string;
+  atomColors?: Record<string, string>;
+  showLabels?: boolean;
+  showBonds?: boolean;
+  showRibbon?: boolean;
 }
 
 export class MolecularViewer {
-    private panel: vscode.WebviewPanel | undefined;
-    private context: vscode.ExtensionContext;
-    private moleculeData: string;
-    private options: MolecularViewerOptions;
+  private panel: vscode.WebviewPanel | undefined;
+  private context: vscode.ExtensionContext;
+  private moleculeData: string;
+  private options: MolecularViewerOptions;
 
-    constructor(context: vscode.ExtensionContext) {
-        this.context = context;
-        this.moleculeData = '';
-        this.options = {
-            format: 'pdb',
-            backgroundColor: '#1e1e1e',
-            showLabels: false,
-            showBonds: true,
-            showRibbon: false
-        };
-    }
+  constructor(context: vscode.ExtensionContext) {
+    this.context = context;
+    this.moleculeData = '';
+    this.options = {
+      format: 'pdb',
+      backgroundColor: '#1e1e1e',
+      showLabels: false,
+      showBonds: true,
+      showRibbon: false,
+    };
+  }
 
-    public async show(moleculeData: string, options: MolecularViewerOptions): Promise<void> {
-        this.moleculeData = moleculeData;
-        this.options = { ...this.options, ...options };
+  public async show(moleculeData: string, options: MolecularViewerOptions): Promise<void> {
+    this.moleculeData = moleculeData;
+    this.options = { ...this.options, ...options };
 
-        const columnToShowIn = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
+    const columnToShowIn = vscode.window.activeTextEditor
+      ? vscode.window.activeTextEditor.viewColumn
+      : undefined;
 
-        if (this.panel) {
-            this.panel.reveal(columnToShowIn);
-        } else {
-            this.panel = vscode.window.createWebviewPanel(
-                'biomniMolecularViewer',
-                'Molecular Structure Viewer',
-                columnToShowIn || vscode.ViewColumn.One,
-                {
-                    enableScripts: true,
-                    retainContextWhenHidden: true,
-                    localResourceRoots: [
-                        vscode.Uri.file(path.join(this.context.extensionPath, 'media'))
-                    ]
-                }
-            );
-
-            this.panel.webview.html = this.getWebviewContent();
-            
-            this.panel.webview.onDidReceiveMessage(
-                message => this.handleMessage(message),
-                undefined,
-                this.context.subscriptions
-            );
-
-            this.panel.onDidDispose(
-                () => {
-                    this.panel = undefined;
-                },
-                undefined,
-                this.context.subscriptions
-            );
+    if (this.panel) {
+      this.panel.reveal(columnToShowIn);
+    } else {
+      this.panel = vscode.window.createWebviewPanel(
+        'biomniMolecularViewer',
+        'Molecular Structure Viewer',
+        columnToShowIn || vscode.ViewColumn.One,
+        {
+          enableScripts: true,
+          retainContextWhenHidden: true,
+          localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionPath, 'media'))],
         }
+      );
 
-        // Send molecule data to webview
-        this.panel.webview.postMessage({
-            command: 'loadMolecule',
-            data: this.moleculeData,
-            options: this.options
-        });
+      this.panel.webview.html = this.getWebviewContent();
+
+      this.panel.webview.onDidReceiveMessage(
+        message => this.handleMessage(message),
+        undefined,
+        this.context.subscriptions
+      );
+
+      this.panel.onDidDispose(
+        () => {
+          this.panel = undefined;
+        },
+        undefined,
+        this.context.subscriptions
+      );
     }
 
-    private handleMessage(message: any): void {
-        switch (message.command) {
-            case 'export':
-                this.exportVisualization(message.format);
-                break;
-            case 'selectAtom':
-                this.handleAtomSelection(message.atomId);
-                break;
-            case 'updateOptions':
-                this.options = { ...this.options, ...message.options };
-                this.updateVisualization();
-                break;
-            case 'error':
-                vscode.window.showErrorMessage(`Molecular Viewer: ${message.error}`);
-                break;
-        }
+    // Send molecule data to webview
+    this.panel.webview.postMessage({
+      command: 'loadMolecule',
+      data: this.moleculeData,
+      options: this.options,
+    });
+  }
+
+  private handleMessage(message: any): void {
+    switch (message.command) {
+      case 'export':
+        this.exportVisualization(message.format);
+        break;
+      case 'selectAtom':
+        this.handleAtomSelection(message.atomId);
+        break;
+      case 'updateOptions':
+        this.options = { ...this.options, ...message.options };
+        this.updateVisualization();
+        break;
+      case 'error':
+        vscode.window.showErrorMessage(`Molecular Viewer: ${message.error}`);
+        break;
     }
+  }
 
-    private async exportVisualization(format: 'png' | 'svg' | 'pdb'): Promise<void> {
-        const uri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file('molecule.' + format),
-            filters: {
-                'Image files': [format],
-                'All files': ['*']
-            }
-        });
+  private async exportVisualization(format: 'png' | 'svg' | 'pdb'): Promise<void> {
+    const uri = await vscode.window.showSaveDialog({
+      defaultUri: vscode.Uri.file('molecule.' + format),
+      filters: {
+        'Image files': [format],
+        'All files': ['*'],
+      },
+    });
 
-        if (uri) {
-            this.panel?.webview.postMessage({
-                command: 'export',
-                format: format,
-                path: uri.fsPath
-            });
-        }
+    if (uri) {
+      this.panel?.webview.postMessage({
+        command: 'export',
+        format: format,
+        path: uri.fsPath,
+      });
     }
+  }
 
-    private handleAtomSelection(atomId: string): void {
-        vscode.window.showInformationMessage(`Selected atom: ${atomId}`);
-    }
+  private handleAtomSelection(atomId: string): void {
+    vscode.window.showInformationMessage(`Selected atom: ${atomId}`);
+  }
 
-    private updateVisualization(): void {
-        this.panel?.webview.postMessage({
-            command: 'updateOptions',
-            options: this.options
-        });
-    }
+  private updateVisualization(): void {
+    this.panel?.webview.postMessage({
+      command: 'updateOptions',
+      options: this.options,
+    });
+  }
 
-    private getWebviewContent(): string {
-        // Uncomment when script files are created
-        // const scriptUri = this.panel!.webview.asWebviewUri(
-        //     vscode.Uri.file(path.join(this.context.extensionPath, 'media', 'molecular-viewer.js'))
-        // );
-        
-        const styleUri = this.panel!.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this.context.extensionPath, 'media', 'molecular-viewer.css'))
-        );
+  private getWebviewContent(): string {
+    // Uncomment when script files are created
+    // const scriptUri = this.panel!.webview.asWebviewUri(
+    //     vscode.Uri.file(path.join(this.context.extensionPath, 'media', 'molecular-viewer.js'))
+    // );
 
-        return `<!DOCTYPE html>
+    const styleUri = this.panel!.webview.asWebviewUri(
+      vscode.Uri.file(path.join(this.context.extensionPath, 'media', 'molecular-viewer.css'))
+    );
+
+    return `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
@@ -303,11 +301,11 @@ export class MolecularViewer {
             </script>
         </body>
         </html>`;
-    }
+  }
 
-    public dispose(): void {
-        if (this.panel) {
-            this.panel.dispose();
-        }
+  public dispose(): void {
+    if (this.panel) {
+      this.panel.dispose();
     }
+  }
 }
