@@ -2148,6 +2148,30 @@ print(result)
   }
 
   /**
+   * Open the main Biomni webview panel
+   */
+  async handleOpenPanel(): Promise<void> {
+    try {
+      if (!this.context) {
+        void vscode.window.showErrorMessage(
+          'Extension context not available. Please reload the extension.'
+        );
+        return;
+      }
+
+      const { BiomniPanelProvider } = await import('../webview/BiomniPanelProvider');
+      const panelProvider = BiomniPanelProvider.getInstance(this.context);
+      panelProvider.createOrShow();
+      
+      void vscode.window.showInformationMessage('Biomni panel opened');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to open Biomni panel:', errorMessage);
+      void vscode.window.showErrorMessage(`Failed to open panel: ${errorMessage}`);
+    }
+  }
+
+  /**
    * Get extension context for settings service
    */
   private async getExtensionContext(): Promise<vscode.ExtensionContext> {

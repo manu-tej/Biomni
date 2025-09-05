@@ -256,6 +256,18 @@ export const BIOMNI_COMMANDS: BiomniCommand[] = [
     priority: 40,
   },
 
+  // === PANEL & UI COMMANDS (Medium Priority) ===
+  {
+    command: 'biomni.openPanel',
+    title: 'Open Biomni Panel',
+    category: 'MCP',
+    description: 'Open the main Biomni webview panel with tab navigation',
+    handler: 'handleOpenPanel',
+    icon: '$(layout)',
+    priority: 70,
+    keybinding: 'ctrl+shift+p',
+  },
+
   // === MCP & SYSTEM COMMANDS (Lower Priority) ===
   {
     command: 'biomni.mcp.refreshTools',

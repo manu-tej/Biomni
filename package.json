@@ -110,6 +110,13 @@
         "icon": "$(stop)"
       },
       {
+        "command": "biomni.openPanel",
+        "title": "Open Biomni Panel",
+        "category": "Biomni MCP",
+        "shortTitle": "Open Panel",
+        "icon": "$(layout)"
+      },
+      {
         "command": "biomni.database.queryUniprot",
         "title": "Query UniProt Database",
         "category": "Biomni Database",
@@ -912,6 +919,7 @@
     "install:cross-platform": "node -e \"process.platform === 'win32' ? require('child_process').spawn('powershell', ['-File', './scripts/install.ps1'], {stdio: 'inherit'}) : require('child_process').spawn('./scripts/install.sh', ['-s'], {stdio: 'inherit'})\""
   },
   "dependencies": {
+    "@vscode/webview-ui-toolkit": "^1.4.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
