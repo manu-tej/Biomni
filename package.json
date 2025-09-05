@@ -900,7 +900,16 @@
     "test:coverage": "jest --coverage",
     "package": "vsce package",
     "build": "npm run compile",
-    "dev": "npm run watch"
+    "dev": "npm run watch",
+    "quick-install": "npm-run-all build:vsix install:vsix",
+    "dev:watch": "npm-run-all --parallel watch dev:install-watch",
+    "dev:install-watch": "nodemon --watch out --ext js --exec \"npm run install:vsix\"",
+    "test-instance": "run-s build:vsix install:vsix && code --new-window --disable-extensions --enable-proposed-api",
+    "build:vsix": "npm-run-all compile package:vsix",
+    "package:vsix": "npm-run-all --silent package:cross-platform",
+    "package:cross-platform": "node -e \"process.platform === 'win32' ? require('child_process').spawn('powershell', ['-File', './scripts/build.ps1'], {stdio: 'inherit'}) : require('child_process').spawn('./scripts/build.sh', [], {stdio: 'inherit'})\"",
+    "install:vsix": "npm-run-all --silent install:cross-platform",
+    "install:cross-platform": "node -e \"process.platform === 'win32' ? require('child_process').spawn('powershell', ['-File', './scripts/install.ps1'], {stdio: 'inherit'}) : require('child_process').spawn('./scripts/install.sh', ['-s'], {stdio: 'inherit'})\""
   },
   "dependencies": {
     "ws": "^8.18.0"
@@ -918,6 +927,8 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.10",
+    "npm-run-all": "^4.1.5",
     "prettier": "^3.2.5",
     "ts-jest": "^29.1.2",
     "typescript": "^5.4.5"
