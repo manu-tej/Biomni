@@ -33,7 +33,7 @@
     "onCommand:biomni.genomics.annotateScRNA",
     "onCommand:biomni.genomics.geneOntology",
     "onCommand:biomni.files.validate",
-    "onCommand:biomni.files.showInfo",
+    "onCommand:biomni.files.showInfo"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -294,14 +294,14 @@
           "when": "resourceExtname =~ /\\.(fasta|fastq|vcf|pdb|gff|gtf|sam|bam|bed)$/",
           "command": "biomni.file.showInfo",
           "group": "biomni@9"
-        },
+        }
       ],
       "editor/context": [
         {
           "when": "resourceExtname =~ /\\.(fasta|fa|fas|seq|fna|ffn|frn)$/",
           "command": "biomni.genomics.blastSequence",
           "group": "biomni@1"
-        },
+        }
       ],
       "commandPalette": [
         {
