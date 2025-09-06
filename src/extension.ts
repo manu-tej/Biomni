@@ -6,12 +6,14 @@ import { FileTypeManager } from './fileTypes';
 import { BiomniSettingsService } from './settings';
 import { BIOMNI_COMMANDS } from './commands';
 import { BiomniCommandHandlers } from './commands/handlers';
+import { BiomniSidebarProvider } from './sidebar/BiomniSidebarProvider';
 
 let mcpClient: BiomniMcpClient | undefined;
 let mcpProvider: BiomniMCPProvider | undefined;
 let fileTypeManager: FileTypeManager | undefined;
 let settingsService: BiomniSettingsService | undefined;
 let commandHandlers: BiomniCommandHandlers | undefined;
+let sidebarProvider: BiomniSidebarProvider | undefined;
 
 /**
  * Extension activation function
@@ -61,6 +63,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     fileTypeManager = new FileTypeManager();
     fileTypeManager.initialize(context);
     console.log('File type manager initialized');
+
+    // Initialize sidebar provider
+    sidebarProvider = new BiomniSidebarProvider(context);
+    console.log('Sidebar provider initialized');
 
     // Initialize MCP provider and client if enabled
     if (config.enabled) {
@@ -120,6 +126,12 @@ export async function deactivate(): Promise<void> {
     if (fileTypeManager) {
       fileTypeManager.dispose();
       fileTypeManager = undefined;
+    }
+
+    // Clean up sidebar provider
+    if (sidebarProvider) {
+      // No specific dispose method needed for TreeDataProvider
+      sidebarProvider = undefined;
     }
 
     // Clean up MCP provider and client

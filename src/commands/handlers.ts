@@ -2159,9 +2159,10 @@ print(result)
         return;
       }
 
-      const { BiomniPanelProvider } = await import('../webview/BiomniPanelProvider');
-      const panelProvider = BiomniPanelProvider.getInstance(this.context);
-      panelProvider.createOrShow();
+      // Use fixed panel with UI toolkit
+      const { BiomniPanelProviderFixed } = await import('../webview/BiomniPanelProvider-fixed');
+      const panelProvider = BiomniPanelProviderFixed.getInstance(this.context);
+      await panelProvider.show();
       
       void vscode.window.showInformationMessage('Biomni panel opened');
     } catch (error) {

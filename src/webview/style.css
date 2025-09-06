@@ -387,3 +387,131 @@ p {
     transform: none;
   }
 }
+
+/* Database Query Form */
+.query-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-gap);
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--vscode-foreground);
+}
+
+/* Database Results */
+.results-container {
+  margin-top: 20px;
+  min-height: 200px;
+}
+
+.results-header {
+  padding: 12px;
+  background: var(--vscode-editor-inactiveSelectionBackground);
+  border-radius: var(--border-radius);
+  margin-bottom: 16px;
+}
+
+.results-header h4 {
+  margin: 0 0 8px 0;
+  color: var(--vscode-foreground);
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-item {
+  padding: 16px;
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--border-radius);
+  transition: all var(--transition-duration) ease;
+}
+
+.result-item:hover {
+  border-color: var(--vscode-focusBorder);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.result-name {
+  color: var(--vscode-textLink-foreground);
+  font-style: italic;
+}
+
+.result-description {
+  margin: 8px 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.result-meta {
+  margin: 4px 0;
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.sequence-display {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+  background: var(--vscode-textCodeBlock-background);
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.result-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.no-results vscode-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.5;
+  margin-bottom: 16px;
+}
+
+.placeholder-text {
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  padding: 40px;
+}
+
+.load-more {
+  text-align: center;
+  margin-top: 20px;
+  padding: 20px;
+}
+
+/* Progress indicator */
+vscode-progress-ring {
+  display: block;
+  margin: 20px auto;
+}

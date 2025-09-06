@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { MessageHandler } from './MessageHandler';
+import { BiomniCommandHandlers } from '../commands/handlers';
 
 /**
  * Webview panel provider for the Biomni extension
@@ -9,6 +11,7 @@ export class BiomniPanelProvider {
 
   private static instance: BiomniPanelProvider | undefined;
   private panel: vscode.WebviewPanel | undefined;
+  private messageHandler: MessageHandler | undefined;
 
   private constructor(private context: vscode.ExtensionContext) {}
 
@@ -62,22 +65,16 @@ export class BiomniPanelProvider {
     // Set the HTML content
     this.panel.webview.html = this.getWebviewContent(this.panel.webview);
 
-    // Handle messages from the webview
+    // Create message handler
+    // Note: We pass undefined for mcpClient for now since webview doesn't need direct MCP access
+    const commandHandlers = new BiomniCommandHandlers(undefined, this.context);
+    this.messageHandler = new MessageHandler(this.context, this.panel.webview, commandHandlers);
+
+    // Handle messages from the webview using the MessageHandler
     this.panel.webview.onDidReceiveMessage(
-      message => {
-        switch (message.type) {
-          case 'navigate':
-            this.handleNavigation(message.tab);
-            return;
-          case 'executeCommand':
-            this.handleCommandExecution(message.command, message.args);
-            return;
-          case 'showInfo':
-            vscode.window.showInformationMessage(message.text);
-            return;
-          case 'showError':
-            vscode.window.showErrorMessage(message.text);
-            return;
+      async message => {
+        if (this.messageHandler) {
+          await this.messageHandler.handleMessage(message);
         }
       },
       undefined,
@@ -87,32 +84,15 @@ export class BiomniPanelProvider {
     // Handle panel disposal
     this.panel.onDidDispose(
       () => {
+        if (this.messageHandler) {
+          this.messageHandler.dispose();
+          this.messageHandler = undefined;
+        }
         this.panel = undefined;
       },
       null,
       this.context.subscriptions
     );
-  }
-
-  /**
-   * Handle tab navigation within the webview
-   */
-  private handleNavigation(tabId: string): void {
-    console.log(`Navigating to tab: ${tabId}`);
-    // Tab switching is handled by JavaScript in the webview
-    // This could be used for analytics or state management
-  }
-
-  /**
-   * Handle command execution requests from the webview
-   */
-  private async handleCommandExecution(command: string, args?: any): Promise<void> {
-    try {
-      await vscode.commands.executeCommand(command, args);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      vscode.window.showErrorMessage(`Command execution failed: ${errorMessage}`);
-    }
   }
 
   /**
@@ -131,13 +111,27 @@ export class BiomniPanelProvider {
       )
     );
 
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, 'src', 'webview', 'style.css')
-    );
-
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, 'src', 'webview', 'main.js')
-    );
+    // Read the actual files for inlining
+    const fs = require('fs');
+    const path = require('path');
+    
+    const stylePath = path.join(this.context.extensionPath, 'out', 'webview', 'style.css');
+    const scriptPath = path.join(this.context.extensionPath, 'out', 'webview', 'webview-client.js');
+    
+    let styleContent = '';
+    let scriptContent = '';
+    
+    try {
+      styleContent = fs.readFileSync(stylePath, 'utf8');
+    } catch (e) {
+      console.error('Failed to read style.css:', e);
+    }
+    
+    try {
+      scriptContent = fs.readFileSync(scriptPath, 'utf8');
+    } catch (e) {
+      console.error('Failed to read webview-client.js:', e);
+    }
 
     // Generate a nonce for Content Security Policy
     const nonce = this.getNonce();
@@ -150,12 +144,14 @@ export class BiomniPanelProvider {
     <meta http-equiv="Content-Security-Policy" 
           content="default-src 'none'; 
                    style-src ${webview.cspSource} 'unsafe-inline';
-                   script-src 'nonce-${nonce}';
+                   script-src ${webview.cspSource} 'nonce-${nonce}';
                    font-src ${webview.cspSource};
                    img-src ${webview.cspSource} https:;">
     
     <title>Biomni Panel</title>
-    <link href="${styleUri}" rel="stylesheet">
+    <style nonce="${nonce}">
+        ${styleContent}
+    </style>
     <script type="module" nonce="${nonce}" src="${toolkitUri}"></script>
 </head>
 <body>
@@ -276,7 +272,41 @@ export class BiomniPanelProvider {
                 <p>Query biological databases and retrieve sequence information.</p>
                 
                 <div class="database-section">
-                    <h3>Available Databases</h3>
+                    <h3>Database Query</h3>
+                    <form id="database-query-form" class="query-form">
+                        <div class="form-group">
+                            <label for="database-select">Select Database:</label>
+                            <vscode-dropdown id="database-select">
+                                <vscode-option value="uniprot">UniProt - Protein sequences</vscode-option>
+                                <vscode-option value="pdb">PDB - 3D structures</vscode-option>
+                                <vscode-option value="alphafold">AlphaFold - AI predictions</vscode-option>
+                                <vscode-option value="interpro">InterPro - Protein families</vscode-option>
+                            </vscode-dropdown>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="query-input">Query:</label>
+                            <vscode-text-field id="query-input" placeholder="e.g., human insulin, P12345, zinc finger">
+                                <span slot="start" class="codicon codicon-search"></span>
+                            </vscode-text-field>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="limit-input">Max Results:</label>
+                            <vscode-text-field id="limit-input" type="number" value="10" min="1" max="100">
+                                <span slot="start" class="codicon codicon-list-ordered"></span>
+                            </vscode-text-field>
+                        </div>
+                        
+                        <vscode-button id="query-submit" type="submit">
+                            <vscode-icon name="search"></vscode-icon>
+                            Search Database
+                        </vscode-button>
+                    </form>
+                    
+                    <vscode-divider></vscode-divider>
+                    
+                    <h3>Quick Access</h3>
                     <div class="database-grid">
                         <vscode-button class="database-button" data-command="biomni.database.queryUniprot">
                             <vscode-icon name="database"></vscode-icon>
@@ -307,6 +337,16 @@ export class BiomniPanelProvider {
                             </div>
                         </vscode-button>
                     </div>
+                    
+                    <vscode-divider></vscode-divider>
+                    
+                    <h3>Query Results</h3>
+                    <div id="database-results" class="results-container">
+                        <vscode-progress-ring id="query-progress" style="display:none;"></vscode-progress-ring>
+                        <div id="results-content">
+                            <p class="placeholder-text">No results yet. Submit a query above to search databases.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -316,36 +356,105 @@ export class BiomniPanelProvider {
                 <p>Perform comprehensive biological sequence and structure analysis.</p>
                 
                 <div class="analysis-section">
-                    <h3>Genomics Tools</h3>
-                    <div class="tool-list">
-                        <vscode-button class="tool-button" data-command="biomni.genomics.blastSequence">
-                            <vscode-icon name="search"></vscode-icon>
-                            BLAST Sequence Search
+                    <h3>File Analysis</h3>
+                    <form id="analysis-form" class="analysis-form">
+                        <div class="form-group">
+                            <label for="analysis-type">Analysis Type:</label>
+                            <vscode-dropdown id="analysis-type">
+                                <vscode-option value="validate">Validate File Format</vscode-option>
+                                <vscode-option value="blast">BLAST Sequence Search</vscode-option>
+                                <vscode-option value="properties">Sequence Properties</vscode-option>
+                                <vscode-option value="orfs">Find ORFs</vscode-option>
+                                <vscode-option value="annotation">Gene Annotation</vscode-option>
+                                <vscode-option value="docking">Molecular Docking</vscode-option>
+                                <vscode-option value="admet">ADMET Prediction</vscode-option>
+                            </vscode-dropdown>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="file-path">File Path (or leave empty for active file):</label>
+                            <vscode-text-field id="file-path" placeholder="/path/to/file.fasta">
+                                <span slot="start" class="codicon codicon-file"></span>
+                            </vscode-text-field>
+                        </div>
+                        
+                        <div id="analysis-options" class="analysis-options">
+                            <!-- Dynamic options based on analysis type -->
+                        </div>
+                        
+                        <vscode-button id="analysis-submit" type="submit">
+                            <vscode-icon name="play"></vscode-icon>
+                            Run Analysis
                         </vscode-button>
-                        <vscode-button class="tool-button" data-command="biomni.genomics.annotateGenes">
-                            <vscode-icon name="gene"></vscode-icon>
-                            Gene Annotation
-                        </vscode-button>
-                        <vscode-button class="tool-button" data-command="biomni.genomics.analyzeSequence">
-                            <vscode-icon name="graph"></vscode-icon>
-                            Sequence Properties
-                        </vscode-button>
-                        <vscode-button class="tool-button" data-command="biomni.genomics.findORFs">
-                            <vscode-icon name="bracket"></vscode-icon>
-                            Find ORFs
-                        </vscode-button>
+                    </form>
+                    
+                    <vscode-divider></vscode-divider>
+                    
+                    <h3>Quick Tools</h3>
+                    <div class="tool-grid">
+                        <div class="tool-category">
+                            <h4>Genomics</h4>
+                            <div class="tool-list">
+                                <vscode-button class="tool-button" data-command="biomni.genomics.blastSequence">
+                                    <vscode-icon name="search"></vscode-icon>
+                                    BLAST Search
+                                </vscode-button>
+                                <vscode-button class="tool-button" data-command="biomni.genomics.annotateGenes">
+                                    <vscode-icon name="tag"></vscode-icon>
+                                    Annotate Genes
+                                </vscode-button>
+                                <vscode-button class="tool-button" data-command="biomni.genomics.analyzeSequence">
+                                    <vscode-icon name="graph"></vscode-icon>
+                                    Analyze Sequence
+                                </vscode-button>
+                                <vscode-button class="tool-button" data-command="biomni.genomics.findORFs">
+                                    <vscode-icon name="bracket"></vscode-icon>
+                                    Find ORFs
+                                </vscode-button>
+                            </div>
+                        </div>
+                        
+                        <div class="tool-category">
+                            <h4>Pharmacology</h4>
+                            <div class="tool-list">
+                                <vscode-button class="tool-button" data-command="biomni.pharmacology.runDiffDock">
+                                    <vscode-icon name="combine"></vscode-icon>
+                                    Molecular Docking
+                                </vscode-button>
+                                <vscode-button class="tool-button" data-command="biomni.pharmacology.predictADMET">
+                                    <vscode-icon name="beaker"></vscode-icon>
+                                    ADMET Prediction
+                                </vscode-button>
+                            </div>
+                        </div>
+                        
+                        <div class="tool-category">
+                            <h4>File Operations</h4>
+                            <div class="tool-list">
+                                <vscode-button class="tool-button" data-command="biomni.validateFormat">
+                                    <vscode-icon name="verified"></vscode-icon>
+                                    Validate Format
+                                </vscode-button>
+                                <vscode-button class="tool-button" data-command="biomni.showInfo">
+                                    <vscode-icon name="info"></vscode-icon>
+                                    Show File Info
+                                </vscode-button>
+                                <vscode-button class="tool-button" data-command="biomni.formatFile">
+                                    <vscode-icon name="edit"></vscode-icon>
+                                    Format File
+                                </vscode-button>
+                            </div>
+                        </div>
                     </div>
                     
-                    <h3>Pharmacology Tools</h3>
-                    <div class="tool-list">
-                        <vscode-button class="tool-button" data-command="biomni.pharmacology.runDiffDock">
-                            <vscode-icon name="combine"></vscode-icon>
-                            Molecular Docking
-                        </vscode-button>
-                        <vscode-button class="tool-button" data-command="biomni.pharmacology.predictADMET">
-                            <vscode-icon name="beaker"></vscode-icon>
-                            ADMET Prediction
-                        </vscode-button>
+                    <vscode-divider></vscode-divider>
+                    
+                    <h3>Analysis Results</h3>
+                    <div id="analysis-results" class="results-container">
+                        <vscode-progress-ring id="analysis-progress" style="display:none;"></vscode-progress-ring>
+                        <div id="analysis-content">
+                            <p class="placeholder-text">No analysis running. Select a tool above to begin.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -356,23 +465,80 @@ export class BiomniPanelProvider {
                 <p>Configure Biomni extension settings and manage API keys.</p>
                 
                 <div class="settings-section">
-                    <h3>Configuration</h3>
-                    <div class="settings-group">
-                        <vscode-button class="settings-button" data-command="biomni.settings.manageApiKeys">
-                            <vscode-icon name="key"></vscode-icon>
-                            Manage API Keys
-                        </vscode-button>
-                        <vscode-button class="settings-button" data-command="biomni.settings.validateConfiguration">
-                            <vscode-icon name="verified"></vscode-icon>
-                            Validate Configuration
-                        </vscode-button>
-                        <vscode-button class="settings-button" data-command="biomni.settings.openPanel">
-                            <vscode-icon name="gear"></vscode-icon>
-                            Open Settings Panel
-                        </vscode-button>
-                    </div>
+                    <h3>API Configuration</h3>
+                    <form id="settings-form" class="settings-form">
+                        <div class="form-group">
+                            <label for="uniprot-key">UniProt API Key:</label>
+                            <vscode-text-field id="uniprot-key" type="password" placeholder="Enter UniProt API key">
+                                <span slot="start" class="codicon codicon-key"></span>
+                            </vscode-text-field>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="pdb-key">PDB API Key:</label>
+                            <vscode-text-field id="pdb-key" type="password" placeholder="Enter PDB API key">
+                                <span slot="start" class="codicon codicon-key"></span>
+                            </vscode-text-field>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="alphafold-key">AlphaFold API Key:</label>
+                            <vscode-text-field id="alphafold-key" type="password" placeholder="Enter AlphaFold API key">
+                                <span slot="start" class="codicon codicon-key"></span>
+                            </vscode-text-field>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="interpro-key">InterPro API Key:</label>
+                            <vscode-text-field id="interpro-key" type="password" placeholder="Enter InterPro API key">
+                                <span slot="start" class="codicon codicon-key"></span>
+                            </vscode-text-field>
+                        </div>
+                        
+                        <vscode-divider></vscode-divider>
+                        
+                        <h4>Preferences</h4>
+                        
+                        <div class="form-group">
+                            <label for="default-database">Default Database:</label>
+                            <vscode-dropdown id="default-database">
+                                <vscode-option value="uniprot">UniProt</vscode-option>
+                                <vscode-option value="pdb">PDB</vscode-option>
+                                <vscode-option value="alphafold">AlphaFold</vscode-option>
+                                <vscode-option value="interpro">InterPro</vscode-option>
+                            </vscode-dropdown>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cache-enabled">
+                                <vscode-checkbox id="cache-enabled" checked>
+                                    Enable result caching
+                                </vscode-checkbox>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cache-size">Max Cache Size (MB):</label>
+                            <vscode-text-field id="cache-size" type="number" value="100" min="10" max="1000">
+                                <span slot="start" class="codicon codicon-database"></span>
+                            </vscode-text-field>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <vscode-button type="submit">
+                                <vscode-icon name="save"></vscode-icon>
+                                Save Settings
+                            </vscode-button>
+                            <vscode-button type="button" appearance="secondary" id="validate-config">
+                                <vscode-icon name="verified"></vscode-icon>
+                                Validate Configuration
+                            </vscode-button>
+                        </div>
+                    </form>
                     
-                    <h3>Data Management</h3>
+                    <vscode-divider></vscode-divider>
+                    
+                    <h3>Quick Actions</h3>
                     <div class="settings-group">
                         <vscode-button class="settings-button" data-command="biomni.settings.export">
                             <vscode-icon name="export"></vscode-icon>
@@ -391,12 +557,24 @@ export class BiomniPanelProvider {
                             Reset to Defaults
                         </vscode-button>
                     </div>
+                    
+                    <vscode-divider></vscode-divider>
+                    
+                    <h3>Status</h3>
+                    <div id="settings-status" class="status-section">
+                        <div class="status-item">
+                            <vscode-icon name="circle-outline"></vscode-icon>
+                            <span>Configuration not validated</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
     
-    <script nonce="${nonce}" src="${scriptUri}"></script>
+    <script nonce="${nonce}">
+        ${scriptContent}
+    </script>
 </body>
 </html>`;
   }

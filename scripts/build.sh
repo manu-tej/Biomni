@@ -48,6 +48,12 @@ if [ ! -d "out" ]; then
     exit 1
 fi
 
+# Copy webview resources to output
+echo "📋 Copying webview resources..."
+mkdir -p out/webview
+cp src/webview/style.css out/webview/ 2>/dev/null || true
+cp src/webview/webview-client.js out/webview/ 2>/dev/null || true
+
 echo "✅ TypeScript compilation completed in ${COMPILE_TIME}s"
 
 # Count compiled files

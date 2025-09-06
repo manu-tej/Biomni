@@ -280,6 +280,25 @@
         "icon": "$(refresh)"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "biomni",
+          "title": "Biomni",
+          "icon": "images/biomni-light.svg"
+        }
+      ]
+    },
+    "views": {
+      "biomni": [
+        {
+          "id": "biomniSidebar",
+          "name": "Biomni Tools",
+          "icon": "$(beaker)",
+          "contextualTitle": "Biomni Biological Tools"
+        }
+      ]
+    },
     "menus": {
       "explorer/context": [
         {
