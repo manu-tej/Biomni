@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { GenomicsToolsService } from '../services/genomicsTools';
+import { BiomniMcpClient } from '../biomni/mcpClient';
 
 // Tree item types for different sections
 export enum BiomniItemType {
@@ -32,10 +34,16 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
     private results: Map<string, BiomniTreeItem[]> = new Map();
     private fileInfo: BiomniTreeItem[] = [];
     private context: vscode.ExtensionContext;
+    private genomicsTools: GenomicsToolsService;
 
-    constructor(context: vscode.ExtensionContext) {
+    constructor(context: vscode.ExtensionContext, mcpClient?: BiomniMcpClient) {
         this.context = context;
+        this.genomicsTools = new GenomicsToolsService(mcpClient);
         this.initialize();
+    }
+
+    public updateMcpClient(mcpClient: BiomniMcpClient): void {
+        this.genomicsTools.updateMcpClient(mcpClient);
     }
 
     private initialize(): void {
@@ -283,46 +291,76 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
 
         if (!query) return;
 
-        vscode.window.withProgress({
+        await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: `Searching ${database}...`,
             cancellable: false
         }, async () => {
-            // Simulate database query
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Mock results
-            const results: BiomniTreeItem[] = [
-                {
-                    label: `Result 1: ${query}`,
-                    type: BiomniItemType.Result,
-                    icon: 'file',
-                    description: 'Match score: 95%',
-                    command: {
-                        command: 'biomni.sidebar.viewResult',
-                        title: 'View Result',
-                        arguments: [{ label: `Result 1: ${query}`, data: { query, database } }]
-                    },
-                    contextValue: 'result'
-                },
-                {
-                    label: `Result 2: ${query}_variant`,
-                    type: BiomniItemType.Result,
-                    icon: 'file',
-                    description: 'Match score: 87%',
-                    command: {
-                        command: 'biomni.sidebar.viewResult',
-                        title: 'View Result',
-                        arguments: [{ label: `Result 2: ${query}_variant`, data: { query, database } }]
-                    },
-                    contextValue: 'result'
+            try {
+                let searchResults: any[] = [];
+                
+                // Call appropriate service based on database
+                switch (database.toLowerCase()) {
+                    case 'uniprot':
+                        searchResults = await this.genomicsTools.searchUniprot(query);
+                        break;
+                    case 'pdb':
+                        searchResults = await this.genomicsTools.searchPDB(query);
+                        break;
+                    case 'alphafold':
+                        searchResults = await this.genomicsTools.searchAlphaFold(query);
+                        break;
+                    default:
+                        vscode.window.showErrorMessage(`Unknown database: ${database}`);
+                        return;
                 }
-            ];
 
-            this.results.set('database', results);
-            this.refresh();
+                // Transform results to tree items
+                const treeResults: BiomniTreeItem[] = searchResults.map((result) => {
+                    // Format based on database type
+                    let label = '';
+                    let description = '';
+                    
+                    if (database.toLowerCase() === 'uniprot') {
+                        label = `${result.accession}: ${result.name || ''}`;
+                        description = result.organism || '';
+                    } else if (database.toLowerCase() === 'pdb') {
+                        label = `${result.pdbId}: ${result.title || ''}`;
+                        description = result.method || '';
+                    } else if (database.toLowerCase() === 'alphafold') {
+                        label = `${result.uniprotId}`;
+                        description = `Confidence: ${result.confidence}%`;
+                    }
 
-            vscode.window.showInformationMessage(`Found ${results.length} results in ${database}`);
+                    return {
+                        label,
+                        type: BiomniItemType.Result,
+                        icon: 'file',
+                        description,
+                        command: {
+                            command: 'biomni.sidebar.viewResult',
+                            title: 'View Result',
+                            arguments: [{ 
+                                label, 
+                                data: { ...result, query, database } 
+                            }]
+                        },
+                        contextValue: 'result',
+                        tooltip: JSON.stringify(result, null, 2)
+                    };
+                });
+
+                this.results.set('database', treeResults);
+                this.refresh();
+
+                vscode.window.showInformationMessage(
+                    `Found ${treeResults.length} results in ${database}`
+                );
+            } catch (error) {
+                vscode.window.showErrorMessage(
+                    `Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+                );
+            }
         });
     }
 
@@ -333,34 +371,118 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
             return;
         }
 
-        vscode.window.withProgress({
+        // Get sequence from active editor
+        const sequence = editor.document.getText();
+        if (!sequence || sequence.length === 0) {
+            vscode.window.showWarningMessage('No sequence found in active file');
+            return;
+        }
+
+        await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: `Running ${analysisType} analysis...`,
             cancellable: false
         }, async () => {
-            // Simulate analysis
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            try {
+                let analysisResults: any;
+                
+                // Run appropriate analysis based on type
+                switch (analysisType.toLowerCase()) {
+                    case 'blast':
+                        // For BLAST, we need to get database preference
+                        const database = await vscode.window.showQuickPick(
+                            ['nr', 'nt', 'swissprot', 'pdb'],
+                            { placeHolder: 'Select BLAST database' }
+                        );
+                        if (!database) return;
 
-            // Mock results
-            const results: BiomniTreeItem[] = [
-                {
-                    label: `${analysisType} Result`,
-                    type: BiomniItemType.Result,
-                    icon: 'graph',
-                    description: 'Completed',
-                    command: {
-                        command: 'biomni.sidebar.viewResult',
-                        title: 'View Result',
-                        arguments: [{ label: `${analysisType} Result`, data: { analysisType } }]
-                    },
-                    contextValue: 'result'
+                        const blastResults = await this.genomicsTools.blastSearch({
+                            sequence,
+                            database,
+                            program: 'blastn'
+                        });
+                        
+                        // Transform BLAST results to tree items
+                        const blastTreeItems: BiomniTreeItem[] = blastResults.map((hit) => ({
+                            label: hit.accession,
+                            type: BiomniItemType.Result,
+                            icon: 'file',
+                            description: `E-value: ${hit.evalue}, Identity: ${hit.identity}%`,
+                            tooltip: hit.description,
+                            command: {
+                                command: 'biomni.sidebar.viewResult',
+                                title: 'View BLAST Hit',
+                                arguments: [{ 
+                                    label: hit.accession, 
+                                    data: { ...hit, analysisType: 'BLAST' } 
+                                }]
+                            },
+                            contextValue: 'result'
+                        }));
+
+                        this.results.set('analysis', blastTreeItems);
+                        break;
+
+                    case 'alignment':
+                    case 'sequence alignment':
+                        // For sequence analysis
+                        analysisResults = await this.genomicsTools.analyzeSequence(sequence);
+                        
+                        // Create tree items for sequence analysis
+                        const analysisTreeItems: BiomniTreeItem[] = [
+                            {
+                                label: 'Sequence Properties',
+                                type: BiomniItemType.Result,
+                                icon: 'info',
+                                description: `Length: ${analysisResults.length}bp`,
+                                children: [
+                                    {
+                                        label: 'GC Content',
+                                        type: BiomniItemType.Result,
+                                        description: `${analysisResults.gcContent.toFixed(2)}%`,
+                                        icon: 'graph'
+                                    },
+                                    {
+                                        label: 'Composition',
+                                        type: BiomniItemType.Result,
+                                        description: `A:${analysisResults.composition.A || 0} T:${analysisResults.composition.T || 0} G:${analysisResults.composition.G || 0} C:${analysisResults.composition.C || 0}`,
+                                        icon: 'list-flat'
+                                    }
+                                ]
+                            }
+                        ];
+
+                        // Add ORFs if found
+                        if (analysisResults.orfs && analysisResults.orfs.length > 0) {
+                            analysisTreeItems.push({
+                                label: `ORFs Found: ${analysisResults.orfs.length}`,
+                                type: BiomniItemType.Result,
+                                icon: 'symbol-method',
+                                children: analysisResults.orfs.map((orf: any) => ({
+                                    label: `ORF ${orf.frame || ''}`,
+                                    type: BiomniItemType.Result,
+                                    description: `${orf.start}-${orf.end} (${orf.length}bp)`,
+                                    icon: 'arrow-right'
+                                }))
+                            });
+                        }
+
+                        this.results.set('analysis', analysisTreeItems);
+                        break;
+
+                    default:
+                        vscode.window.showErrorMessage(`Unknown analysis type: ${analysisType}`);
+                        return;
                 }
-            ];
 
-            this.results.set('analysis', results);
-            this.refresh();
-
-            vscode.window.showInformationMessage(`${analysisType} analysis complete`);
+                this.refresh();
+                vscode.window.showInformationMessage(`${analysisType} analysis complete`);
+                
+            } catch (error) {
+                vscode.window.showErrorMessage(
+                    `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+                );
+            }
         });
     }
 

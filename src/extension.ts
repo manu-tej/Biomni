@@ -64,8 +64,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     fileTypeManager.initialize(context);
     console.log('File type manager initialized');
 
-    // Initialize sidebar provider
-    sidebarProvider = new BiomniSidebarProvider(context);
+    // Initialize sidebar provider (will use mock data initially)
+    sidebarProvider = new BiomniSidebarProvider(context, undefined);
     console.log('Sidebar provider initialized');
 
     // Initialize MCP provider and client if enabled
@@ -91,7 +91,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         // Update command handlers with MCP client
         commandHandlers.updateMcpClient(mcpClient);
-        console.log('MCP client initialized');
+        
+        // Update sidebar provider with MCP client
+        if (sidebarProvider) {
+          sidebarProvider.updateMcpClient(mcpClient);
+        }
+        
+        console.log('MCP client initialized and connected to services');
       } catch (mcpError) {
         console.error('MCP initialization failed:', mcpError);
         // Continue without MCP - commands still work
