@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { GenomicsToolsService } from '../services/genomicsTools';
 import { BiomniMcpClient } from '../biomni/mcpClient';
+import { ResultsManager, ExportOptions } from '../services/resultsManager';
 
 // Tree item types for different sections
 export enum BiomniItemType {
@@ -10,6 +11,7 @@ export enum BiomniItemType {
     Analysis = 'analysis',
     FileInfo = 'fileInfo',
     Settings = 'settings',
+    History = 'history',
     Result = 'result',
     Action = 'action'
 }
@@ -35,10 +37,12 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
     private fileInfo: BiomniTreeItem[] = [];
     private context: vscode.ExtensionContext;
     private genomicsTools: GenomicsToolsService;
+    private resultsManager: ResultsManager;
 
     constructor(context: vscode.ExtensionContext, mcpClient?: BiomniMcpClient) {
         this.context = context;
         this.genomicsTools = new GenomicsToolsService(mcpClient);
+        this.resultsManager = new ResultsManager(context);
         this.initialize();
     }
 
@@ -81,6 +85,10 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
         // Result actions
         vscode.commands.registerCommand('biomni.sidebar.viewResult', (item: BiomniTreeItem) => this.viewResult(item));
         vscode.commands.registerCommand('biomni.sidebar.exportResult', (item: BiomniTreeItem) => this.exportResult(item));
+        
+        // History actions
+        vscode.commands.registerCommand('biomni.sidebar.clearHistory', () => this.clearHistory());
+        vscode.commands.registerCommand('biomni.sidebar.exportAllResults', () => this.exportAllResults());
     }
 
     getTreeItem(element: BiomniTreeItem): vscode.TreeItem {
@@ -130,6 +138,8 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
                 return Promise.resolve(this.getAnalysisItems());
             case BiomniItemType.FileInfo:
                 return Promise.resolve(this.fileInfo);
+            case BiomniItemType.History:
+                return Promise.resolve(this.getHistoryItems());
             case BiomniItemType.Settings:
                 return Promise.resolve(this.getSettingsItems());
             default:
@@ -159,6 +169,13 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
                 icon: 'file-text',
                 children: this.fileInfo,
                 tooltip: 'Current file information'
+            },
+            {
+                label: 'History',
+                type: BiomniItemType.History,
+                icon: 'history',
+                children: [],
+                tooltip: 'Recent results and exports'
             },
             {
                 label: 'Settings',
@@ -258,6 +275,96 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
         return items;
     }
 
+    private getHistoryItems(): BiomniTreeItem[] {
+        const items: BiomniTreeItem[] = [];
+        
+        // Get recent results
+        const recentResults = this.resultsManager.getRecentResults(10);
+        
+        if (recentResults.length > 0) {
+            items.push({
+                label: `Recent Results (${recentResults.length})`,
+                type: BiomniItemType.Result,
+                icon: 'list-tree',
+                children: recentResults.map(result => ({
+                    label: `${result.source}: ${result.query || 'No query'}`,
+                    type: BiomniItemType.Result,
+                    icon: 'file',
+                    description: new Date(result.timestamp).toLocaleTimeString(),
+                    tooltip: `Type: ${result.type}\nSource: ${result.source}\nTime: ${new Date(result.timestamp).toLocaleString()}`,
+                    command: {
+                        command: 'biomni.sidebar.viewResult',
+                        title: 'View Result',
+                        arguments: [{ 
+                            label: result.source, 
+                            data: { ...result.data, resultId: result.id } 
+                        }]
+                    },
+                    contextValue: 'historyResult',
+                    data: { resultId: result.id }
+                }))
+            });
+        }
+        
+        // Add statistics
+        const stats = this.resultsManager.getStatistics();
+        items.push({
+            label: 'Statistics',
+            type: BiomniItemType.Result,
+            icon: 'graph',
+            description: `${stats.totalResults} total results`,
+            children: [
+                {
+                    label: 'By Type',
+                    type: BiomniItemType.Result,
+                    icon: 'list-flat',
+                    children: Object.entries(stats.resultsByType).map(([type, count]) => ({
+                        label: type,
+                        type: BiomniItemType.Result,
+                        description: `${count} results`,
+                        icon: 'circle-filled'
+                    }))
+                },
+                {
+                    label: 'By Source',
+                    type: BiomniItemType.Result,
+                    icon: 'list-flat',
+                    children: Object.entries(stats.resultsBySource).map(([source, count]) => ({
+                        label: source,
+                        type: BiomniItemType.Result,
+                        description: `${count} results`,
+                        icon: 'circle-filled'
+                    }))
+                }
+            ]
+        });
+        
+        // Add actions
+        items.push({
+            label: 'Clear History',
+            type: BiomniItemType.Action,
+            icon: 'trash',
+            command: {
+                command: 'biomni.sidebar.clearHistory',
+                title: 'Clear History'
+            },
+            tooltip: 'Clear all stored results'
+        });
+        
+        items.push({
+            label: 'Export All Results',
+            type: BiomniItemType.Action,
+            icon: 'export',
+            command: {
+                command: 'biomni.sidebar.exportAllResults',
+                title: 'Export All'
+            },
+            tooltip: 'Export all results to file'
+        });
+        
+        return items;
+    }
+
     private getSettingsItems(): BiomniTreeItem[] {
         return [
             {
@@ -314,6 +421,15 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
                         vscode.window.showErrorMessage(`Unknown database: ${database}`);
                         return;
                 }
+
+                // Store results in manager
+                this.resultsManager.storeResult(
+                    'database',
+                    database.toLowerCase(),
+                    searchResults,
+                    query,
+                    { duration: Date.now() }
+                );
 
                 // Transform results to tree items
                 const treeResults: BiomniTreeItem[] = searchResults.map((result) => {
@@ -568,19 +684,34 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
             });
     }
 
-    private exportResult(item: BiomniTreeItem): void {
-        vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file(`${item.label}.json`),
-            filters: {
-                'JSON': ['json'],
-                'CSV': ['csv'],
-                'All': ['*']
-            }
-        }).then(uri => {
-            if (uri) {
-                vscode.window.showInformationMessage(`Result exported to ${uri.fsPath}`);
-            }
-        });
+    private async exportResult(item: BiomniTreeItem): Promise<void> {
+        // Show format options
+        const format = await vscode.window.showQuickPick(
+            ['JSON', 'CSV', 'TSV', 'FASTA', 'HTML'],
+            { placeHolder: 'Select export format' }
+        );
+        
+        if (!format) return;
+        
+        const exportOptions: ExportOptions = {
+            format: format.toLowerCase() as any,
+            includeMetadata: true,
+            prettify: true
+        };
+        
+        // If we have a result ID stored in the item data, use it
+        if (item.data?.resultId) {
+            await this.resultsManager.exportResult(item.data.resultId, exportOptions);
+        } else {
+            // Otherwise export the raw data
+            const tempResultId = this.resultsManager.storeResult(
+                'database',
+                'export',
+                item.data,
+                item.label
+            );
+            await this.resultsManager.exportResult(tempResultId, exportOptions);
+        }
     }
 
     public refresh(): void {
@@ -590,5 +721,48 @@ export class BiomniSidebarProvider implements vscode.TreeDataProvider<BiomniTree
     public clearResults(): void {
         this.results.clear();
         this.refresh();
+    }
+
+    private async clearHistory(): Promise<void> {
+        const confirm = await vscode.window.showWarningMessage(
+            'Clear all stored results? This cannot be undone.',
+            'Yes', 'No'
+        );
+        
+        if (confirm === 'Yes') {
+            this.resultsManager.clearResults();
+            this.refresh();
+            vscode.window.showInformationMessage('History cleared');
+        }
+    }
+
+    private async exportAllResults(): Promise<void> {
+        const allResults = [
+            ...this.resultsManager.getResultsByType('database'),
+            ...this.resultsManager.getResultsByType('analysis')
+        ];
+        
+        if (allResults.length === 0) {
+            vscode.window.showWarningMessage('No results to export');
+            return;
+        }
+        
+        const format = await vscode.window.showQuickPick(
+            ['JSON', 'CSV', 'HTML'],
+            { placeHolder: 'Select export format' }
+        );
+        
+        if (!format) return;
+        
+        const exportOptions: ExportOptions = {
+            format: format.toLowerCase() as any,
+            includeMetadata: true,
+            prettify: true
+        };
+        
+        await this.resultsManager.exportMultipleResults(
+            allResults.map(r => r.id),
+            exportOptions
+        );
     }
 }
