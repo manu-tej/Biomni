@@ -8,6 +8,7 @@ set -e
 FORCE_RELOAD=true
 SKIP_BUILD=false
 QUIET=false
+FAST_MODE=false
 
 # Help function
 show_help() {
@@ -23,6 +24,7 @@ OPTIONS:
     -s, --skip-build    Skip building, install existing VSIX only
     -q, --quiet         Quiet mode - minimal output
     -f, --force         Force reinstallation (uninstall first)
+    --fast              Fast mode (quiet + optimized performance)
 
 DESCRIPTION:
     Installs the Biomni VSCode extension from a packaged VSIX file.
@@ -62,6 +64,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         -f|--force)
             FORCE_UNINSTALL=true
+            shift
+            ;;
+        --fast)
+            FAST_MODE=true
+            QUIET=true
             shift
             ;;
         *)
@@ -135,8 +142,10 @@ VSIX_NAME="${PACKAGE_NAME}-${VERSION}.vsix"
 # Build if not skipped
 if [ "$SKIP_BUILD" = false ]; then
     log_info "Building extension first..."
-    if [ "$QUIET" = true ]; then
-        ./scripts/build.sh > /dev/null 2>&1
+    if [ "$FAST_MODE" = true ]; then
+        ./scripts/build.sh --fast > /dev/null 2>&1
+    elif [ "$QUIET" = true ]; then
+        ./scripts/build.sh --quiet > /dev/null 2>&1
     else
         ./scripts/build.sh
     fi
