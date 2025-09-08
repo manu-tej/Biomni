@@ -7,7 +7,7 @@ import { BiomniSettingsService } from './settings';
 import { BIOMNI_COMMANDS } from './commands';
 import { BiomniCommandHandlers } from './commands/handlers';
 import { BiomniSidebarProvider } from './sidebar/BiomniSidebarProvider';
-// import { PerformanceMonitorService } from './services/performanceMonitor';
+import { PerformanceMonitorService } from './services/performanceMonitor';
 
 let mcpClient: BiomniMcpClient | undefined;
 let mcpProvider: BiomniMCPProvider | undefined;
@@ -16,7 +16,7 @@ let settingsService: BiomniSettingsService | undefined;
 let commandHandlers: BiomniCommandHandlers | undefined;
 let sidebarProvider: BiomniSidebarProvider | undefined;
 // Performance monitor for tracking extension performance
-// let performanceMonitor: PerformanceMonitorService | undefined;
+let performanceMonitor: PerformanceMonitorService | undefined;
 
 /**
  * Extension activation function
@@ -24,8 +24,8 @@ let sidebarProvider: BiomniSidebarProvider | undefined;
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // Initialize performance monitoring FIRST to track activation time
-  // performanceMonitor = PerformanceMonitorService.getInstance();
-  // performanceMonitor.initialize(context);
+  performanceMonitor = PerformanceMonitorService.getInstance();
+  performanceMonitor.initialize(context);
   
   // Immediate output to verify activation is called
   void vscode.window.showInformationMessage('🚀 Biomni Extension: Activation starting...');
@@ -127,10 +127,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   console.log(`Total commands registered: ${BIOMNI_COMMANDS.length}`);
   
   // Complete performance monitoring activation measurement
-  // if (performanceMonitor) {
-  //   performanceMonitor.completeActivationMeasurement();
-  //   performanceMonitor.logPerformanceDashboard();
-  // }
+  if (performanceMonitor) {
+    performanceMonitor.completeActivationMeasurement();
+    performanceMonitor.logPerformanceDashboard();
+  }
 }
 
 /**
@@ -177,10 +177,10 @@ export async function deactivate(): Promise<void> {
     }
 
     // Clean up performance monitor
-    // if (performanceMonitor) {
-    //   performanceMonitor.dispose();
-    //   performanceMonitor = undefined;
-    // }
+    if (performanceMonitor) {
+      performanceMonitor.dispose();
+      performanceMonitor = undefined;
+    }
 
     console.log('Biomni MCP Integration extension deactivated successfully');
   } catch (error) {
@@ -403,15 +403,44 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
     // Performance monitoring commands
     // Performance monitoring commands - temporarily disabled
     vscode.commands.registerCommand('biomni.performance.showDashboard', async () => {
-      void vscode.window.showInformationMessage('Performance dashboard is temporarily disabled');
+      try {
+        if (!performanceMonitor) {
+          void vscode.window.showWarningMessage('Performance monitor is not initialized');
+          return;
+        }
+        await performanceMonitor.showPerformanceDashboard();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        void vscode.window.showErrorMessage(`Failed to show performance dashboard: ${errorMessage}`);
+      }
     }),
 
     vscode.commands.registerCommand('biomni.performance.logReport', () => {
-      void vscode.window.showInformationMessage('Performance logging is temporarily disabled');
+      try {
+        if (!performanceMonitor) {
+          void vscode.window.showWarningMessage('Performance monitor is not initialized');
+          return;
+        }
+        performanceMonitor.logPerformanceDashboard();
+        void vscode.window.showInformationMessage('Performance report logged to console');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        void vscode.window.showErrorMessage(`Failed to log performance report: ${errorMessage}`);
+      }
     }),
 
     vscode.commands.registerCommand('biomni.performance.reset', () => {
-      void vscode.window.showInformationMessage('Performance reset is temporarily disabled');
+      try {
+        if (!performanceMonitor) {
+          void vscode.window.showWarningMessage('Performance monitor is not initialized');
+          return;
+        }
+        performanceMonitor.reset();
+        void vscode.window.showInformationMessage('Performance metrics reset');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        void vscode.window.showErrorMessage(`Failed to reset performance metrics: ${errorMessage}`);
+      }
     }),
   ];
 
