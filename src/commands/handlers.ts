@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { BiomniMcpClient } from '../biomni/mcpClient';
 import { BiomniSettingsService } from '../settings';
 import { PerformanceMonitorService } from '../services/performanceMonitor';
+import { CacheManagerService, CacheCategory } from '../services/cacheManager';
+import { LazyLoaderService } from '../services/lazyLoader';
 
 /**
  * Command execution result interface
@@ -30,6 +32,8 @@ export class BiomniCommandHandlers {
   private outputChannel: vscode.OutputChannel;
   private context: vscode.ExtensionContext | undefined;
   private performanceMonitor: PerformanceMonitorService;
+  private cacheManager: CacheManagerService;
+  private lazyLoader: LazyLoaderService;
 
   constructor(mcpClient?: BiomniMcpClient, context?: vscode.ExtensionContext) {
     console.log('BiomniCommandHandlers constructor called');
@@ -37,6 +41,8 @@ export class BiomniCommandHandlers {
     this.context = context;
     this.outputChannel = vscode.window.createOutputChannel('Biomni');
     this.performanceMonitor = PerformanceMonitorService.getInstance();
+    this.cacheManager = CacheManagerService.getInstance();
+    this.lazyLoader = LazyLoaderService.getInstance();
     
     // Ensure the output channel is visible in the Output dropdown
     // by writing an initialization line at construction time.
@@ -149,16 +155,71 @@ export class BiomniCommandHandlers {
     return this.performanceMonitor.measureCommandExecution(commandName, commandFunction);
   }
 
+  /**
+   * Execute command with intelligent caching
+   */
+  private async executeWithCaching<T>(
+    commandName: string,
+    cacheKey: string,
+    category: CacheCategory,
+    commandFunction: () => Promise<T>,
+    customTtl?: number
+  ): Promise<T> {
+    // Try to get from cache first
+    const cached = await this.cacheManager.get<T>(category, cacheKey);
+    if (cached) {
+      console.log(`Using cached result for ${commandName}: ${cacheKey}`);
+      return cached;
+    }
+
+    // Execute with performance monitoring and cache the result
+    const result = await this.executeWithPerformanceMonitoring(commandName, commandFunction);
+    
+    // Cache the result for future use
+    await this.cacheManager.set(category, cacheKey, result, customTtl);
+    
+    return result;
+  }
+
+  /**
+   * Generate cache key for API calls
+   */
+  private generateApiCacheKey(toolName: string, params: any): string {
+    const paramsHash = this.hashObject(params);
+    return `${toolName}_${paramsHash}`;
+  }
+
+  /**
+   * Generate cache key for command results
+   */
+  private generateCommandCacheKey(commandName: string, params: any): string {
+    const paramsHash = this.hashObject(params);
+    return `${commandName}_${paramsHash}`;
+  }
+
+  /**
+   * Simple hash function for objects
+   */
+  private hashObject(obj: any): string {
+    const str = JSON.stringify(obj, Object.keys(obj).sort());
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
+
   // === DATABASE QUERY HANDLERS ===
 
   /**
-   * Handle UniProt database queries
+   * Handle UniProt database queries with intelligent caching
    */
   async handleQueryUniprot(): Promise<void> {
-    return this.executeWithPerformanceMonitoring('queryUniprot', async () => {
-      if (!this.validateMcpClient()) {
-        return;
-      }
+    if (!this.validateMcpClient()) {
+      return;
+    }
 
     try {
       const prompt = await vscode.window.showInputBox({
@@ -171,6 +232,9 @@ export class BiomniCommandHandlers {
         return;
       }
 
+      const params = { prompt, max_results: 5 };
+      const cacheKey = this.generateApiCacheKey('query_uniprot', params);
+
       const result = await this.executeWithProgress(
         {
           title: 'Querying UniProt Database',
@@ -180,13 +244,18 @@ export class BiomniCommandHandlers {
         async (progress, _token) => {
           progress.report({ message: 'Searching UniProt...' });
 
-          // Temporarily disabled performance monitoring
-          const response = await this.mcpClient!.callTool('query_uniprot', {
-            prompt,
-            max_results: 5,
-          });
-
-          return response;
+          return await this.executeWithCaching(
+            'queryUniprot',
+            cacheKey,
+            CacheCategory.API_RESPONSES,
+            async () => {
+              return await this.performanceMonitor.measureApiCall(
+                'query_uniprot',
+                () => this.mcpClient!.callTool('query_uniprot', params)
+              );
+            },
+            10 * 60 * 1000 // 10 minute TTL for UniProt queries
+          );
         }
       );
 
@@ -207,7 +276,6 @@ export class BiomniCommandHandlers {
       this.logCommand('handleQueryUniprot', {}, { success: false, error: errorMsg });
       void vscode.window.showErrorMessage(`UniProt query failed: ${errorMsg}`);
     }
-    });
   }
 
   /**
@@ -1846,10 +1914,85 @@ print(result)
   }
 
   /**
-   * Handle clear cache
+   * Handle clear cache with category selection
    */
   async handleClearCache(): Promise<void> {
-    void vscode.window.showInformationMessage('Clear cache functionality not yet implemented');
+    try {
+      const cacheStats = this.cacheManager.getStats();
+      
+      if (cacheStats.totalEntries === 0) {
+        void vscode.window.showInformationMessage('Cache is already empty');
+        return;
+      }
+
+      const categories = [
+        { label: 'All Categories', detail: `Clear all ${cacheStats.totalEntries} cached entries (${Math.round(cacheStats.totalSize / 1024)}KB)` },
+        { label: 'API Responses', detail: 'Clear cached API responses' },
+        { label: 'Command Results', detail: 'Clear cached command results' }, 
+        { label: 'Analysis Results', detail: 'Clear cached analysis results' },
+        { label: 'Tool Definitions', detail: 'Clear cached tool definitions' },
+        { label: 'User Preferences', detail: 'Clear cached user preferences' },
+        { label: 'File Content', detail: 'Clear cached file content' }
+      ];
+
+      const selection = await vscode.window.showQuickPick(categories, {
+        placeHolder: 'Select cache category to clear'
+      });
+
+      if (!selection) {
+        return;
+      }
+
+      const categoryMap: Record<string, CacheCategory | undefined> = {
+        'API Responses': CacheCategory.API_RESPONSES,
+        'Command Results': CacheCategory.COMMAND_RESULTS,
+        'Analysis Results': CacheCategory.ANALYSIS_RESULTS,
+        'Tool Definitions': CacheCategory.TOOL_DEFINITIONS,
+        'User Preferences': CacheCategory.USER_PREFERENCES,
+        'File Content': CacheCategory.FILE_CONTENT
+      };
+
+      const category = categoryMap[selection.label];
+      
+      // Clear the selected category
+      await this.cacheManager.clear(category);
+      
+      const message = category ? 
+        `Cleared ${selection.label.toLowerCase()} cache` : 
+        `Cleared all cache (${cacheStats.totalEntries} entries)`;
+      
+      void vscode.window.showInformationMessage(message);
+      
+      console.log(`Cache cleared: ${selection.label}`);
+      
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      void vscode.window.showErrorMessage(`Failed to clear cache: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Handle cache dashboard display
+   */
+  async handleShowCacheDashboard(): Promise<void> {
+    try {
+      await this.cacheManager.showDashboard();
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      void vscode.window.showErrorMessage(`Failed to show cache dashboard: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Handle lazy loading dashboard display  
+   */
+  async handleShowLazyLoadDashboard(): Promise<void> {
+    try {
+      await this.lazyLoader.showDashboard();
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      void vscode.window.showErrorMessage(`Failed to show lazy loading dashboard: ${errorMsg}`);
+    }
   }
 
   // === PRIVATE HELPER METHODS FOR GENOMICS ===
@@ -2221,5 +2364,13 @@ print(result)
    */
   dispose(): void {
     this.outputChannel.dispose();
+    
+    // Dispose cache manager and lazy loader
+    if (this.cacheManager) {
+      this.cacheManager.dispose();
+    }
+    if (this.lazyLoader) {
+      this.lazyLoader.dispose();
+    }
   }
 }
