@@ -15,8 +15,8 @@ export class BiomniPanelProviderSimple {
   }
 
   public async show(): Promise<void> {
-    const column = vscode.window.activeTextEditor 
-      ? vscode.window.activeTextEditor.viewColumn 
+    const column = vscode.window.activeTextEditor
+      ? vscode.window.activeTextEditor.viewColumn
       : vscode.ViewColumn.One;
 
     if (this.panel) {
@@ -31,15 +31,19 @@ export class BiomniPanelProviderSimple {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [this.context.extensionUri]
+        localResourceRoots: [this.context.extensionUri],
       }
     );
 
     this.panel.webview.html = this.getSimpleWebviewContent();
 
-    this.panel.onDidDispose(() => {
-      this.panel = undefined;
-    }, null, this.context.subscriptions);
+    this.panel.onDidDispose(
+      () => {
+        this.panel = undefined;
+      },
+      null,
+      this.context.subscriptions
+    );
   }
 
   private getSimpleWebviewContent(): string {

@@ -114,19 +114,19 @@ export class BiomniPanelProvider {
     // Read the actual files for inlining
     const fs = require('fs');
     const path = require('path');
-    
+
     const stylePath = path.join(this.context.extensionPath, 'out', 'webview', 'style.css');
     const scriptPath = path.join(this.context.extensionPath, 'out', 'webview', 'webview-client.js');
-    
+
     let styleContent = '';
     let scriptContent = '';
-    
+
     try {
       styleContent = fs.readFileSync(stylePath, 'utf8');
     } catch (e) {
       console.error('Failed to read style.css:', e);
     }
-    
+
     try {
       scriptContent = fs.readFileSync(scriptPath, 'utf8');
     } catch (e) {

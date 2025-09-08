@@ -17,8 +17,8 @@ export class BiomniPanelProviderFixed {
   }
 
   public async show(): Promise<void> {
-    const column = vscode.window.activeTextEditor 
-      ? vscode.window.activeTextEditor.viewColumn 
+    const column = vscode.window.activeTextEditor
+      ? vscode.window.activeTextEditor.viewColumn
       : vscode.ViewColumn.One;
 
     if (this.panel) {
@@ -35,16 +35,20 @@ export class BiomniPanelProviderFixed {
         retainContextWhenHidden: true,
         localResourceRoots: [
           this.context.extensionUri,
-          vscode.Uri.joinPath(this.context.extensionUri, 'node_modules', '@vscode')
-        ]
+          vscode.Uri.joinPath(this.context.extensionUri, 'node_modules', '@vscode'),
+        ],
       }
     );
 
     this.panel.webview.html = this.getWebviewContent(this.panel.webview);
 
-    this.panel.onDidDispose(() => {
-      this.panel = undefined;
-    }, null, this.context.subscriptions);
+    this.panel.onDidDispose(
+      () => {
+        this.panel = undefined;
+      },
+      null,
+      this.context.subscriptions
+    );
 
     // Handle messages from webview
     this.panel.webview.onDidReceiveMessage(
@@ -79,9 +83,9 @@ export class BiomniPanelProviderFixed {
 
     // Read CSS file
     const stylePath = path.join(this.context.extensionPath, 'out', 'webview', 'style.css');
-    
+
     let styleContent = '';
-    
+
     try {
       if (fs.existsSync(stylePath)) {
         styleContent = fs.readFileSync(stylePath, 'utf8');
@@ -89,7 +93,7 @@ export class BiomniPanelProviderFixed {
     } catch (e) {
       console.error('Failed to read style.css:', e);
     }
-    
+
     // Note: We're not using the external script file, embedding directly instead
     // This avoids CSP issues with external files
 
@@ -609,7 +613,6 @@ export class BiomniPanelProviderFixed {
 </body>
 </html>`;
   }
-
 
   public dispose(): void {
     BiomniPanelProviderFixed.instance = undefined;

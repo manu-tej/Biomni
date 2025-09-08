@@ -22,7 +22,7 @@ import {
   DatabaseResultMessage,
   UpdateProgressMessage,
   UpdateStatusMessage,
-  ErrorMessage
+  ErrorMessage,
 } from './messages';
 
 /**
@@ -54,8 +54,8 @@ export class MessageHandler {
         'genomic-analysis',
         'pharmacology-tools',
         'settings-management',
-        'streaming-updates'
-      ]
+        'streaming-updates',
+      ],
     });
     this.postMessage(readyMessage);
     this.isWebviewReady = true;
@@ -137,7 +137,7 @@ export class MessageHandler {
   private async handleNavigate(message: NavigateMessage): Promise<void> {
     // Log navigation for analytics
     console.log(`User navigated to: ${message.tab}`);
-    
+
     // Update status
     await this.sendStatus('idle', `Switched to ${message.tab} tab`);
   }
@@ -214,7 +214,7 @@ export class MessageHandler {
       const response = MessageFactory.createExtensionMessage(MessageType.DeliverData, {
         dataType: message.dataType,
         data,
-        requestId: message.id
+        requestId: message.id,
       } as Omit<DeliverDataMessage, 'type' | 'timestamp' | 'id'>);
 
       await this.postMessage(response);
@@ -249,7 +249,7 @@ export class MessageHandler {
 
       const response = MessageFactory.createExtensionMessage(MessageType.SettingsSaved, {
         success: true,
-        message: 'Settings saved successfully'
+        message: 'Settings saved successfully',
       });
 
       await this.postMessage(response);
@@ -284,14 +284,14 @@ export class MessageHandler {
           info: {
             format: message.fileType || 'unknown',
             sequences: 1,
-            length: content.length
-          }
+            length: content.length,
+          },
         }
       );
 
       await this.postMessage(validationResult);
       await this.sendStatus('success', 'Validation complete');
-      
+
       // In a real implementation, we would use commandHandlers for validation
       // For now, the validation is simplified
 
@@ -317,10 +317,10 @@ export class MessageHandler {
 
       // Map database to command
       const commandMap: Record<string, string> = {
-        'uniprot': 'biomni.database.queryUniprot',
-        'pdb': 'biomni.database.queryPDB',
-        'alphafold': 'biomni.database.queryAlphaFold',
-        'interpro': 'biomni.database.queryInterPro'
+        uniprot: 'biomni.database.queryUniprot',
+        pdb: 'biomni.database.queryPDB',
+        alphafold: 'biomni.database.queryAlphaFold',
+        interpro: 'biomni.database.queryInterPro',
       };
 
       const command = commandMap[message.database];
@@ -333,12 +333,12 @@ export class MessageHandler {
       // Execute the actual command through the command handlers
       // For now, we'll use the command palette approach
       // In a real implementation, we'd call the handler methods directly
-      
+
       // Store query in workspace state for the handler to retrieve
       await this.context.workspaceState.update('pendingDatabaseQuery', {
         database: message.database,
         query: message.query,
-        options: message.options
+        options: message.options,
       });
 
       // Execute the command
@@ -357,7 +357,7 @@ export class MessageHandler {
           query: message.query,
           results: results as any[],
           totalCount: (results as any[]).length,
-          hasMore: false
+          hasMore: false,
         }
       );
 
@@ -402,15 +402,15 @@ export class MessageHandler {
             success: true,
             data: {
               summary: 'Analysis completed successfully',
-              metrics: { score: 0.95, confidence: 0.88 }
+              metrics: { score: 0.95, confidence: 0.88 },
             },
             visualizations: [
               {
                 type: 'chart',
-                data: { type: 'bar', values: [1, 2, 3, 4, 5] }
-              }
-            ]
-          }
+                data: { type: 'bar', values: [1, 2, 3, 4, 5] },
+              },
+            ],
+          },
         }
       );
 
@@ -451,7 +451,7 @@ export class MessageHandler {
       fileName: editor.document.fileName,
       languageId: editor.document.languageId,
       lineCount: editor.document.lineCount,
-      isDirty: editor.document.isDirty
+      isDirty: editor.document.isDirty,
     };
   }
 
@@ -462,7 +462,7 @@ export class MessageHandler {
     const config = vscode.workspace.getConfiguration('biomni');
     return {
       apiKeys: config.get('apiKeys', {}),
-      preferences: config.get('preferences', {})
+      preferences: config.get('preferences', {}),
     };
   }
 
@@ -486,13 +486,10 @@ export class MessageHandler {
    * Send error message
    */
   private async sendError(requestId: string, error: string): Promise<void> {
-    const errorMessage: ErrorMessage = MessageFactory.createExtensionMessage(
-      MessageType.Error,
-      {
-        error,
-        details: `Request ID: ${requestId}`
-      }
-    );
+    const errorMessage: ErrorMessage = MessageFactory.createExtensionMessage(MessageType.Error, {
+      error,
+      details: `Request ID: ${requestId}`,
+    });
     await this.postMessage(errorMessage);
   }
 
@@ -507,7 +504,7 @@ export class MessageHandler {
   ): Promise<void> {
     const payload: any = {
       operationId,
-      progress
+      progress,
     };
     if (message !== undefined) {
       payload.message = message;

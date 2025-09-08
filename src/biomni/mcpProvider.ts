@@ -373,17 +373,12 @@ export class BiomniMCPProvider {
    * Validate that the server can be started
    */
   private async validateServerSetup(): Promise<boolean> {
-    try {
-      // Check if Python is available
-      // Check if Biomni is installed
-      // Check if server script exists
+    // Check if Python is available
+    // Check if Biomni is installed
+    // Check if server script exists
 
-      // For now, return true - in a real implementation we would do actual validation
-      return true;
-    } catch (error) {
-      console.error('Server validation failed:', error);
-      return false;
-    }
+    // For now, return true - in a real implementation we would do actual validation
+    return true;
   }
 
   /**

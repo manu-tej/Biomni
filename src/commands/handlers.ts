@@ -938,34 +938,38 @@ print(result)
         case 'fasta':
         case 'fa':
         case 'fas':
-        case 'fna':
+        case 'fna': {
           fileType = 'FASTA';
           const fastaValidation = this.validateFastaFormat(content);
           isValid = fastaValidation.isValid;
           errors = fastaValidation.errors;
           break;
+        }
 
         case 'fastq':
-        case 'fq':
+        case 'fq': {
           fileType = 'FASTQ';
           const fastqValidation = this.validateFastqFormat(content);
           isValid = fastqValidation.isValid;
           errors = fastqValidation.errors;
           break;
+        }
 
-        case 'vcf':
+        case 'vcf': {
           fileType = 'VCF';
           const vcfValidation = this.validateVcfFormat(content);
           isValid = vcfValidation.isValid;
           errors = vcfValidation.errors;
           break;
+        }
 
-        case 'pdb':
+        case 'pdb': {
           fileType = 'PDB';
           const pdbValidation = this.validatePdbFormat(content);
           isValid = pdbValidation.isValid;
           errors = pdbValidation.errors;
           break;
+        }
 
         default:
           void vscode.window.showWarningMessage(
@@ -1209,26 +1213,30 @@ print(result)
         case 'fa':
         case 'fas':
         case 'fna':
-        case 'faa':
+        case 'faa': {
           const fastaInfo = this.analyzeFastaFile(content);
           fileInfo = { ...fileInfo, ...fastaInfo };
           break;
+        }
 
         case 'fastq':
-        case 'fq':
+        case 'fq': {
           const fastqInfo = this.analyzeFastqFile(content);
           fileInfo = { ...fileInfo, ...fastqInfo };
           break;
+        }
 
-        case 'vcf':
+        case 'vcf': {
           const vcfInfo = this.analyzeVcfFile(content);
           fileInfo = { ...fileInfo, ...vcfInfo };
           break;
+        }
 
-        case 'pdb':
+        case 'pdb': {
           const pdbInfo = this.analyzePdbFile(content);
           fileInfo = { ...fileInfo, ...pdbInfo };
           break;
+        }
       }
 
       // Create formatted output
@@ -2163,7 +2171,7 @@ print(result)
       const { BiomniPanelProviderFixed } = await import('../webview/BiomniPanelProvider-fixed');
       const panelProvider = BiomniPanelProviderFixed.getInstance(this.context);
       await panelProvider.show();
-      
+
       void vscode.window.showInformationMessage('Biomni panel opened');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

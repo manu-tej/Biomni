@@ -91,12 +91,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         // Update command handlers with MCP client
         commandHandlers.updateMcpClient(mcpClient);
-        
+
         // Update sidebar provider with MCP client
         if (sidebarProvider) {
           sidebarProvider.updateMcpClient(mcpClient);
         }
-        
+
         console.log('MCP client initialized and connected to services');
       } catch (mcpError) {
         console.error('MCP initialization failed:', mcpError);

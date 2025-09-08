@@ -14,7 +14,7 @@ export enum MessageType {
   QueryDatabase = 'queryDatabase',
   StartAnalysis = 'startAnalysis',
   CancelOperation = 'cancelOperation',
-  
+
   // From extension to webview
   UpdateContent = 'updateContent',
   UpdateProgress = 'updateProgress',
@@ -25,7 +25,7 @@ export enum MessageType {
   DatabaseResult = 'databaseResult',
   SettingsSaved = 'settingsSaved',
   Error = 'error',
-  Ready = 'ready'
+  Ready = 'ready',
 }
 
 /**
@@ -213,7 +213,7 @@ export interface ReadyMessage extends BaseMessage {
 /**
  * Union type for all webview to extension messages
  */
-export type WebviewMessage = 
+export type WebviewMessage =
   | NavigateMessage
   | ExecuteCommandMessage
   | ShowInfoMessage
@@ -245,17 +245,21 @@ export type ExtensionMessage =
  * Type guards
  */
 export function isWebviewMessage(message: any): message is WebviewMessage {
-  return message && 
-         typeof message.type === 'string' && 
-         typeof message.timestamp === 'number' &&
-         typeof message.id === 'string';
+  return (
+    message &&
+    typeof message.type === 'string' &&
+    typeof message.timestamp === 'number' &&
+    typeof message.id === 'string'
+  );
 }
 
 export function isExtensionMessage(message: any): message is ExtensionMessage {
-  return message && 
-         typeof message.type === 'string' && 
-         typeof message.timestamp === 'number' &&
-         typeof message.id === 'string';
+  return (
+    message &&
+    typeof message.type === 'string' &&
+    typeof message.timestamp === 'number' &&
+    typeof message.id === 'string'
+  );
 }
 
 /**
@@ -283,7 +287,7 @@ export class MessageValidator {
     'biomni.settings.reset',
     'biomni.formatFile',
     'biomni.showInfo',
-    'biomni.validateFormat'
+    'biomni.validateFormat',
   ]);
 
   /**
@@ -314,9 +318,12 @@ export class MessageValidator {
    */
   static validateMessage(rawMessage: any): { valid: boolean; error?: string; sanitized?: any } {
     // Check basic structure
-    if (!rawMessage || typeof rawMessage.type !== 'string' || 
-        typeof rawMessage.timestamp !== 'number' || 
-        typeof rawMessage.id !== 'string') {
+    if (
+      !rawMessage ||
+      typeof rawMessage.type !== 'string' ||
+      typeof rawMessage.timestamp !== 'number' ||
+      typeof rawMessage.id !== 'string'
+    ) {
       return { valid: false, error: 'Invalid message structure' };
     }
 
@@ -389,7 +396,7 @@ export class MessageFactory {
       type,
       timestamp: Date.now(),
       id: MessageFactory.generateId(),
-      ...payload
+      ...payload,
     } as T;
   }
 
@@ -401,7 +408,7 @@ export class MessageFactory {
       type,
       timestamp: Date.now(),
       id: MessageFactory.generateId(),
-      ...payload
+      ...payload,
     } as T;
   }
 }

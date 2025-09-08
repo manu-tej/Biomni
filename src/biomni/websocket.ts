@@ -21,8 +21,8 @@ export class MCPWebSocketManager extends EventEmitter {
   private ws: WebSocket | null = null;
   private options: Required<WebSocketOptions>;
   private reconnectAttempts = 0;
-  private reconnectTimer: NodeJS.Timeout | null = null;
-  private pingTimer: NodeJS.Timeout | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private pingTimer: ReturnType<typeof setTimeout> | null = null;
   private messageQueue: WebSocketMessage[] = [];
   private requestCallbacks = new Map<string, { resolve: Function; reject: Function }>();
   private requestCounter = 0;
