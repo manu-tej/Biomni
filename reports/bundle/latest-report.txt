@@ -1,17 +1,17 @@
 
 # Bundle Analysis Report
-Generated: 9/8/2025, 1:35:04 PM
+Generated: 9/8/2025, 1:38:56 PM
 
 ## Summary
-- Total Size: 596.7 KB
-- Gzipped Size: 141.1 KB
+- Total Size: 599.5 KB
+- Gzipped Size: 141.7 KB
 - Compression Ratio: 76.4%
 - File Count: 4
 - Module Count: 0
 
 ## Size Breakdown
-- extension.js.map: 415.8 KB (69.7%)
-- extension.js: 127.1 KB (21.3%)
+- extension.js.map: 418.1 KB (69.7%)
+- extension.js: 127.7 KB (21.3%)
 - 453.extension.js.map: 28.7 KB (4.8%)
 - 453.extension.js: 25.1 KB (4.2%)
 
@@ -21,5 +21,5 @@ Generated: 9/8/2025, 1:35:04 PM
 - Total: 30
 
 ## Validation Status
-- Total Size Limit: ✅ PASS (596.7 KB / 5 MB)
+- Total Size Limit: ✅ PASS (599.5 KB / 5 MB)
 - Overall Status: ✅ PASS

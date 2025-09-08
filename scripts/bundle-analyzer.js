@@ -305,9 +305,9 @@ module.exports = {
         new BundleAnalyzerPlugin({
             analyzerMode: 'static',
             openAnalyzer: false,
-            reportFilename: './reports/bundle/bundle-report.html',
+            reportFilename: '../../reports/bundle/bundle-report.html',
             generateStatsFile: true,
-            statsFilename: './reports/bundle/bundle-stats.json'
+            statsFilename: '../../reports/bundle/bundle-stats.json'
         })
     ]
 };

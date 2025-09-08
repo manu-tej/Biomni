@@ -1,0 +1,535 @@
+/**
+ * Asset Caching Strategy for VSCode Extension
+ * Implements intelligent caching for optimal performance
+ */
+
+(function(global) {
+    'use strict';
+    
+    /**
+     * Cache configuration
+     */
+    const config = {
+        // Cache storage limits
+        maxCacheSize: 50 * 1024 * 1024, // 50MB
+        maxCacheEntries: 1000,
+        
+        // Cache TTL by asset type (in milliseconds)
+        ttl: {
+            css: 24 * 60 * 60 * 1000,      // 24 hours
+            js: 12 * 60 * 60 * 1000,       // 12 hours
+            image: 7 * 24 * 60 * 60 * 1000, // 7 days
+            data: 60 * 60 * 1000,           // 1 hour
+            api: 5 * 60 * 1000              // 5 minutes
+        },
+        
+        // Cache priorities
+        priority: {
+            critical: 1,    // Never evict
+            high: 2,        // Evict last
+            medium: 3,      // Normal eviction
+            low: 4          // Evict first
+        },
+        
+        // Storage backends (in order of preference)
+        storageBackends: ['indexedDB', 'localStorage', 'memory']
+    };
+    
+    /**
+     * Storage backends
+     */
+    class MemoryStorage {
+        constructor() {
+            this.cache = new Map();
+            this.size = 0;
+        }
+        
+        async get(key) {
+            return this.cache.get(key) || null;
+        }
+        
+        async set(key, value) {
+            const size = this.estimateSize(value);
+            
+            if (this.cache.has(key)) {
+                const oldValue = this.cache.get(key);
+                this.size -= this.estimateSize(oldValue);
+            }
+            
+            this.cache.set(key, value);
+            this.size += size;
+            
+            return true;
+        }
+        
+        async delete(key) {
+            if (this.cache.has(key)) {
+                const value = this.cache.get(key);
+                this.size -= this.estimateSize(value);
+                return this.cache.delete(key);
+            }
+            return false;
+        }
+        
+        async clear() {
+            this.cache.clear();
+            this.size = 0;
+        }
+        
+        async keys() {
+            return Array.from(this.cache.keys());
+        }
+        
+        getSize() {
+            return this.size;
+        }
+        
+        estimateSize(obj) {
+            if (typeof obj === 'string') {
+                return obj.length * 2; // UTF-16
+            }
+            if (obj instanceof ArrayBuffer) {
+                return obj.byteLength;
+            }
+            if (obj instanceof Blob) {
+                return obj.size;
+            }
+            // Rough estimation for objects
+            return JSON.stringify(obj).length * 2;
+        }
+    }
+    
+    class LocalStorageBackend {
+        constructor() {
+            this.prefix = 'vscode-biomni-cache:';
+        }
+        
+        async get(key) {
+            try {
+                const data = localStorage.getItem(this.prefix + key);
+                return data ? JSON.parse(data) : null;
+            } catch (error) {
+                console.warn('LocalStorage get error:', error);
+                return null;
+            }
+        }
+        
+        async set(key, value) {
+            try {
+                localStorage.setItem(this.prefix + key, JSON.stringify(value));
+                return true;
+            } catch (error) {
+                console.warn('LocalStorage set error:', error);
+                return false;
+            }
+        }
+        
+        async delete(key) {
+            try {
+                localStorage.removeItem(this.prefix + key);
+                return true;
+            } catch (error) {
+                console.warn('LocalStorage delete error:', error);
+                return false;
+            }
+        }
+        
+        async clear() {
+            try {
+                const keys = Object.keys(localStorage)
+                    .filter(k => k.startsWith(this.prefix));
+                keys.forEach(k => localStorage.removeItem(k));
+                return true;
+            } catch (error) {
+                console.warn('LocalStorage clear error:', error);
+                return false;
+            }
+        }
+        
+        async keys() {
+            try {
+                return Object.keys(localStorage)
+                    .filter(k => k.startsWith(this.prefix))
+                    .map(k => k.substring(this.prefix.length));
+            } catch (error) {
+                console.warn('LocalStorage keys error:', error);
+                return [];
+            }
+        }
+    }
+    
+    class IndexedDBBackend {
+        constructor() {
+            this.dbName = 'vscode-biomni-cache';
+            this.version = 1;
+            this.db = null;
+        }
+        
+        async init() {
+            if (this.db) return this.db;
+            
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(this.dbName, this.version);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    this.db = request.result;
+                    resolve(this.db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    
+                    if (!db.objectStoreNames.contains('cache')) {
+                        const store = db.createObjectStore('cache', { keyPath: 'key' });
+                        store.createIndex('timestamp', 'timestamp');
+                        store.createIndex('priority', 'priority');
+                    }
+                };
+            });
+        }
+        
+        async get(key) {
+            try {
+                await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['cache'], 'readonly');
+                    const store = transaction.objectStore('cache');
+                    const request = store.get(key);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        const result = request.result;
+                        resolve(result ? result.value : null);
+                    };
+                });
+            } catch (error) {
+                console.warn('IndexedDB get error:', error);
+                return null;
+            }
+        }
+        
+        async set(key, value) {
+            try {
+                await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['cache'], 'readwrite');
+                    const store = transaction.objectStore('cache');
+                    const request = store.put({
+                        key,
+                        value,
+                        timestamp: Date.now(),
+                        priority: value.priority || config.priority.medium
+                    });
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(true);
+                });
+            } catch (error) {
+                console.warn('IndexedDB set error:', error);
+                return false;
+            }
+        }
+        
+        async delete(key) {
+            try {
+                await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['cache'], 'readwrite');
+                    const store = transaction.objectStore('cache');
+                    const request = store.delete(key);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(true);
+                });
+            } catch (error) {
+                console.warn('IndexedDB delete error:', error);
+                return false;
+            }
+        }
+        
+        async clear() {
+            try {
+                await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['cache'], 'readwrite');
+                    const store = transaction.objectStore('cache');
+                    const request = store.clear();
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(true);
+                });
+            } catch (error) {
+                console.warn('IndexedDB clear error:', error);
+                return false;
+            }
+        }
+        
+        async keys() {
+            try {
+                await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['cache'], 'readonly');
+                    const store = transaction.objectStore('cache');
+                    const request = store.getAllKeys();
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            } catch (error) {
+                console.warn('IndexedDB keys error:', error);
+                return [];
+            }
+        }
+    }
+    
+    /**
+     * Main Asset Cache Manager
+     */
+    class AssetCache {
+        constructor() {
+            this.storage = null;
+            this.memoryCache = new MemoryStorage();
+            this.stats = {
+                hits: 0,
+                misses: 0,
+                sets: 0,
+                evictions: 0
+            };
+        }
+        
+        async initialize() {
+            // Try storage backends in order of preference
+            for (const backend of config.storageBackends) {
+                try {
+                    if (backend === 'indexedDB' && 'indexedDB' in global) {
+                        this.storage = new IndexedDBBackend();
+                        await this.storage.init();
+                        break;
+                    } else if (backend === 'localStorage' && 'localStorage' in global) {
+                        this.storage = new LocalStorageBackend();
+                        break;
+                    } else if (backend === 'memory') {
+                        this.storage = this.memoryCache;
+                        break;
+                    }
+                } catch (error) {
+                    console.warn(`Failed to initialize ${backend} storage:`, error);
+                }
+            }
+            
+            if (!this.storage) {
+                this.storage = this.memoryCache;
+            }
+            
+            // Start cleanup interval
+            this.startCleanup();
+        }
+        
+        async get(key, type = 'data') {
+            try {
+                // Check memory cache first
+                let entry = await this.memoryCache.get(key);
+                
+                if (!entry && this.storage !== this.memoryCache) {
+                    // Fallback to persistent storage
+                    entry = await this.storage.get(key);
+                    
+                    if (entry) {
+                        // Promote to memory cache
+                        await this.memoryCache.set(key, entry);
+                    }
+                }
+                
+                if (entry) {
+                    // Check if expired
+                    const ttl = config.ttl[type] || config.ttl.data;
+                    if (Date.now() - entry.timestamp > ttl) {
+                        await this.delete(key);
+                        this.stats.misses++;
+                        return null;
+                    }
+                    
+                    this.stats.hits++;
+                    return entry.data;
+                }
+                
+                this.stats.misses++;
+                return null;
+            } catch (error) {
+                console.warn('Cache get error:', error);
+                this.stats.misses++;
+                return null;
+            }
+        }
+        
+        async set(key, data, type = 'data', priority = config.priority.medium) {
+            try {
+                const entry = {
+                    data,
+                    timestamp: Date.now(),
+                    type,
+                    priority,
+                    size: this.estimateSize(data)
+                };
+                
+                // Check size limits before caching
+                if (entry.size > config.maxCacheSize / 10) {
+                    console.warn('Asset too large to cache:', key, entry.size);
+                    return false;
+                }
+                
+                // Ensure cache limits
+                await this.ensureCacheSize();
+                
+                // Set in both memory and persistent storage
+                await this.memoryCache.set(key, entry);
+                
+                if (this.storage !== this.memoryCache) {
+                    await this.storage.set(key, entry);
+                }
+                
+                this.stats.sets++;
+                return true;
+            } catch (error) {
+                console.warn('Cache set error:', error);
+                return false;
+            }
+        }
+        
+        async delete(key) {
+            try {
+                await this.memoryCache.delete(key);
+                
+                if (this.storage !== this.memoryCache) {
+                    await this.storage.delete(key);
+                }
+                
+                return true;
+            } catch (error) {
+                console.warn('Cache delete error:', error);
+                return false;
+            }
+        }
+        
+        async clear() {
+            try {
+                await this.memoryCache.clear();
+                
+                if (this.storage !== this.memoryCache) {
+                    await this.storage.clear();
+                }
+                
+                // Reset stats
+                this.stats = {
+                    hits: 0,
+                    misses: 0,
+                    sets: 0,
+                    evictions: 0
+                };
+                
+                return true;
+            } catch (error) {
+                console.warn('Cache clear error:', error);
+                return false;
+            }
+        }
+        
+        async ensureCacheSize() {
+            const keys = await this.memoryCache.keys();
+            
+            if (keys.length > config.maxCacheEntries || 
+                this.memoryCache.getSize() > config.maxCacheSize) {
+                
+                await this.evictLRU();
+            }
+        }
+        
+        async evictLRU() {
+            const keys = await this.memoryCache.keys();
+            const entries = [];
+            
+            for (const key of keys) {
+                const entry = await this.memoryCache.get(key);
+                if (entry) {
+                    entries.push({ key, ...entry });
+                }
+            }
+            
+            // Sort by priority and timestamp (LRU)
+            entries.sort((a, b) => {
+                if (a.priority !== b.priority) {
+                    return b.priority - a.priority; // Higher priority first
+                }
+                return a.timestamp - b.timestamp; // Older first
+            });
+            
+            // Evict bottom 25%
+            const toEvict = entries.slice(Math.floor(entries.length * 0.75));
+            
+            for (const entry of toEvict) {
+                await this.delete(entry.key);
+                this.stats.evictions++;
+            }
+        }
+        
+        estimateSize(obj) {
+            return this.memoryCache.estimateSize(obj);
+        }
+        
+        startCleanup() {
+            // Run cleanup every 5 minutes
+            setInterval(async () => {
+                try {
+                    const keys = await this.storage.keys();
+                    
+                    for (const key of keys) {
+                        const entry = await this.storage.get(key);
+                        if (entry) {
+                            const ttl = config.ttl[entry.type] || config.ttl.data;
+                            if (Date.now() - entry.timestamp > ttl) {
+                                await this.delete(key);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Cleanup error:', error);
+                }
+            }, 5 * 60 * 1000);
+        }
+        
+        getStats() {
+            const total = this.stats.hits + this.stats.misses;
+            return {
+                ...this.stats,
+                hitRate: total > 0 ? (this.stats.hits / total) : 0,
+                cacheSize: this.memoryCache.getSize(),
+                storageType: this.storage.constructor.name
+            };
+        }
+    }
+    
+    // Create global instance
+    const assetCache = new AssetCache();
+    
+    // Initialize on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => assetCache.initialize());
+    } else {
+        assetCache.initialize();
+    }
+    
+    // Export to global scope
+    global.AssetCache = assetCache;
+    
+    // Support for module systems
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = assetCache;
+    }
+    
+})(typeof window !== 'undefined' ? window : this);

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { BiomniMcpClient } from '../biomni/mcpClient';
 import { BiomniSettingsService } from '../settings';
+import { PerformanceMonitorService } from '../services/performanceMonitor';
 
 /**
  * Command execution result interface
@@ -28,12 +29,15 @@ export class BiomniCommandHandlers {
   private mcpClient: BiomniMcpClient | undefined;
   private outputChannel: vscode.OutputChannel;
   private context: vscode.ExtensionContext | undefined;
+  private performanceMonitor: PerformanceMonitorService;
 
   constructor(mcpClient?: BiomniMcpClient, context?: vscode.ExtensionContext) {
     console.log('BiomniCommandHandlers constructor called');
     this.mcpClient = mcpClient;
     this.context = context;
     this.outputChannel = vscode.window.createOutputChannel('Biomni');
+    this.performanceMonitor = PerformanceMonitorService.getInstance();
+    
     // Ensure the output channel is visible in the Output dropdown
     // by writing an initialization line at construction time.
     try {
@@ -135,15 +139,26 @@ export class BiomniCommandHandlers {
     return true;
   }
 
+  /**
+   * Execute command with performance monitoring
+   */
+  private async executeWithPerformanceMonitoring<T>(
+    commandName: string,
+    commandFunction: () => Promise<T>
+  ): Promise<T> {
+    return this.performanceMonitor.measureCommandExecution(commandName, commandFunction);
+  }
+
   // === DATABASE QUERY HANDLERS ===
 
   /**
    * Handle UniProt database queries
    */
   async handleQueryUniprot(): Promise<void> {
-    if (!this.validateMcpClient()) {
-      return;
-    }
+    return this.executeWithPerformanceMonitoring('queryUniprot', async () => {
+      if (!this.validateMcpClient()) {
+        return;
+      }
 
     try {
       const prompt = await vscode.window.showInputBox({
@@ -165,6 +180,7 @@ export class BiomniCommandHandlers {
         async (progress, _token) => {
           progress.report({ message: 'Searching UniProt...' });
 
+          // Temporarily disabled performance monitoring
           const response = await this.mcpClient!.callTool('query_uniprot', {
             prompt,
             max_results: 5,
@@ -191,6 +207,7 @@ export class BiomniCommandHandlers {
       this.logCommand('handleQueryUniprot', {}, { success: false, error: errorMsg });
       void vscode.window.showErrorMessage(`UniProt query failed: ${errorMsg}`);
     }
+    });
   }
 
   /**

@@ -948,11 +948,13 @@
     "install:cross-platform": "node -e \"process.platform === 'win32' ? require('child_process').spawn('powershell', ['-File', './scripts/install.ps1'], {stdio: 'inherit'}) : require('child_process').spawn('./scripts/install.sh', ['-s'], {stdio: 'inherit'})\"",
     "performance:test": "npm run build:prod && node scripts/performance-test.js",
     "size:check": "node -e \"const fs = require('fs'); const stats = fs.statSync('dist/extension.js'); console.log('Bundle size:', Math.round(stats.size / 1024), 'KB');\"",
-    "assets:optimize": "npm run assets:optimize-images && npm run assets:optimize-css",
+    "assets:optimize": "npm run assets:optimize-images && npm run assets:optimize-css && npm run assets:optimize-js",
     "assets:optimize-images": "node scripts/optimize-images.js",
     "assets:optimize-css": "node scripts/optimize-css.js",
+    "assets:optimize-js": "node scripts/optimize-js.js",
     "assets:analyze": "du -sh src/webview/assets/* images/* 2>/dev/null || echo 'Asset directories analyzed'",
-    "assets:size-report": "find src/webview images -type f -exec du -h {} + 2>/dev/null | sort -hr"
+    "assets:size-report": "find src/webview images -type f -exec du -h {} + 2>/dev/null | sort -hr",
+    "assets:performance-test": "node scripts/asset-performance-test.js"
   },
   "dependencies": {
     "@vscode/webview-ui-toolkit": "^1.4.0",

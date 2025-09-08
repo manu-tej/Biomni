@@ -7,7 +7,7 @@ import { BiomniSettingsService } from './settings';
 import { BIOMNI_COMMANDS } from './commands';
 import { BiomniCommandHandlers } from './commands/handlers';
 import { BiomniSidebarProvider } from './sidebar/BiomniSidebarProvider';
-import { PerformanceMonitorService } from './services/performanceMonitor';
+// import { PerformanceMonitorService } from './services/performanceMonitor';
 
 let mcpClient: BiomniMcpClient | undefined;
 let mcpProvider: BiomniMCPProvider | undefined;
@@ -24,8 +24,8 @@ let sidebarProvider: BiomniSidebarProvider | undefined;
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // Initialize performance monitoring FIRST to track activation time
-  performanceMonitor = PerformanceMonitorService.getInstance();
-  performanceMonitor.initialize(context);
+  // performanceMonitor = PerformanceMonitorService.getInstance();
+  // performanceMonitor.initialize(context);
   
   // Immediate output to verify activation is called
   void vscode.window.showInformationMessage('🚀 Biomni Extension: Activation starting...');
@@ -127,10 +127,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   console.log(`Total commands registered: ${BIOMNI_COMMANDS.length}`);
   
   // Complete performance monitoring activation measurement
-  if (performanceMonitor) {
-    performanceMonitor.completeActivationMeasurement();
-    performanceMonitor.logPerformanceDashboard();
-  }
+  // if (performanceMonitor) {
+  //   performanceMonitor.completeActivationMeasurement();
+  //   performanceMonitor.logPerformanceDashboard();
+  // }
 }
 
 /**
@@ -177,10 +177,10 @@ export async function deactivate(): Promise<void> {
     }
 
     // Clean up performance monitor
-    if (performanceMonitor) {
-      performanceMonitor.dispose();
-      performanceMonitor = undefined;
-    }
+    // if (performanceMonitor) {
+    //   performanceMonitor.dispose();
+    //   performanceMonitor = undefined;
+    // }
 
     console.log('Biomni MCP Integration extension deactivated successfully');
   } catch (error) {
@@ -398,6 +398,20 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         void vscode.window.showErrorMessage(`Failed to open settings panel: ${errorMessage}`);
       }
+    }),
+
+    // Performance monitoring commands
+    // Performance monitoring commands - temporarily disabled
+    vscode.commands.registerCommand('biomni.performance.showDashboard', async () => {
+      void vscode.window.showInformationMessage('Performance dashboard is temporarily disabled');
+    }),
+
+    vscode.commands.registerCommand('biomni.performance.logReport', () => {
+      void vscode.window.showInformationMessage('Performance logging is temporarily disabled');
+    }),
+
+    vscode.commands.registerCommand('biomni.performance.reset', () => {
+      void vscode.window.showInformationMessage('Performance reset is temporarily disabled');
     }),
   ];
 

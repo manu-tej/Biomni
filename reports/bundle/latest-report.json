@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-09-08T20:35:02.607Z",
+  "timestamp": "2025-09-08T20:38:52.225Z",
   "summary": {
-    "totalSize": 611036,
-    "gzippedSize": 144486,
+    "totalSize": 613928,
+    "gzippedSize": 145113,
     "fileCount": 4,
     "moduleCount": 0
   },
@@ -11,25 +11,25 @@
       "size": 25713,
       "gzippedSize": 5406,
       "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js",
-      "percentage": 4.208099031808273
+      "percentage": 4.188276149646213
     },
     "453.extension.js.map": {
       "size": 29363,
       "gzippedSize": 6593,
       "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js.map",
-      "percentage": 4.80544517835283
+      "percentage": 4.7828084075005535
     },
     "extension.js": {
-      "size": 130194,
-      "gzippedSize": 32957,
+      "size": 130758,
+      "gzippedSize": 33068,
       "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js",
-      "percentage": 21.307091562526594
+      "percentage": 21.298588759593958
     },
     "extension.js.map": {
-      "size": 425766,
-      "gzippedSize": 99530,
+      "size": 428094,
+      "gzippedSize": 100046,
       "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js.map",
-      "percentage": 69.6793642273123
+      "percentage": 69.73032668325926
     }
   },
   "modules": [],
