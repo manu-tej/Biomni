@@ -58,14 +58,14 @@ export class PerformanceMonitorService {
   private activationStartTime: number = 0;
   private memoryMonitorInterval: NodeJS.Timeout | undefined;
   private context: vscode.ExtensionContext | undefined;
-  
+
   private readonly thresholds: PerformanceThresholds = {
     maxActivationTime: 2000, // 2 seconds
     maxMemoryUsage: 100 * 1024 * 1024, // 100MB
     maxCommandExecutionTime: 500, // 500ms
     maxApiResponseTime: 3000, // 3 seconds
     memoryLeakThreshold: 50 * 1024 * 1024, // 50MB
-    performanceDegradationThreshold: 1.5 // 50% increase
+    performanceDegradationThreshold: 1.5, // 50% increase
   };
 
   private constructor() {
@@ -75,7 +75,7 @@ export class PerformanceMonitorService {
       commandExecutionTimes: {},
       apiResponseTimes: {},
       extensionSize: 0,
-      lastUpdate: new Date()
+      lastUpdate: new Date(),
     };
   }
 
@@ -91,7 +91,7 @@ export class PerformanceMonitorService {
     this.startActivationMeasurement();
     this.startMemoryMonitoring();
     this.calculateExtensionSize();
-    
+
     console.log('PerformanceMonitorService initialized');
   }
 
@@ -109,12 +109,16 @@ export class PerformanceMonitorService {
     if (this.activationStartTime > 0) {
       this.metrics.activationTime = Date.now() - this.activationStartTime;
       this.metrics.lastUpdate = new Date();
-      
+
       if (this.metrics.activationTime > this.thresholds.maxActivationTime) {
-        console.warn(`Activation time exceeded threshold: ${this.metrics.activationTime}ms > ${this.thresholds.maxActivationTime}ms`);
-        void vscode.window.showWarningMessage(`Extension activation took ${this.metrics.activationTime}ms (threshold: ${this.thresholds.maxActivationTime}ms)`);
+        console.warn(
+          `Activation time exceeded threshold: ${this.metrics.activationTime}ms > ${this.thresholds.maxActivationTime}ms`
+        );
+        void vscode.window.showWarningMessage(
+          `Extension activation took ${this.metrics.activationTime}ms (threshold: ${this.thresholds.maxActivationTime}ms)`
+        );
       }
-      
+
       console.log(`Extension activation completed in ${this.metrics.activationTime}ms`);
     }
   }
@@ -135,20 +139,24 @@ export class PerformanceMonitorService {
   public measureMemoryUsage(): void {
     const memUsage = process.memoryUsage();
     const totalMemory = memUsage.heapUsed + memUsage.external;
-    
+
     // Check for potential memory leaks
     if (this.metrics.memoryUsage > 0) {
       const memoryIncrease = totalMemory - this.metrics.memoryUsage;
       if (memoryIncrease > this.thresholds.memoryLeakThreshold) {
-        console.warn(`Potential memory leak detected: ${Math.round(memoryIncrease / (1024 * 1024))}MB increase`);
+        console.warn(
+          `Potential memory leak detected: ${Math.round(memoryIncrease / (1024 * 1024))}MB increase`
+        );
       }
     }
-    
+
     this.metrics.memoryUsage = totalMemory;
     this.metrics.lastUpdate = new Date();
-    
+
     if (totalMemory > this.thresholds.maxMemoryUsage) {
-      console.warn(`Memory usage exceeded threshold: ${Math.round(totalMemory / (1024 * 1024))}MB > ${Math.round(this.thresholds.maxMemoryUsage / (1024 * 1024))}MB`);
+      console.warn(
+        `Memory usage exceeded threshold: ${Math.round(totalMemory / (1024 * 1024))}MB > ${Math.round(this.thresholds.maxMemoryUsage / (1024 * 1024))}MB`
+      );
     }
   }
 
@@ -159,11 +167,11 @@ export class PerformanceMonitorService {
     if (this.context) {
       const fs = require('fs');
       const path = require('path');
-      
+
       try {
         const extensionPath = this.context.extensionPath;
         const outPath = path.join(extensionPath, 'out');
-        
+
         if (fs.existsSync(outPath)) {
           this.metrics.extensionSize = this.calculateDirectorySize(outPath);
         }
@@ -180,14 +188,14 @@ export class PerformanceMonitorService {
     const fs = require('fs');
     const path = require('path');
     let totalSize = 0;
-    
+
     try {
       const files = fs.readdirSync(dirPath);
-      
+
       for (const file of files) {
         const filePath = path.join(dirPath, file);
         const stats = fs.statSync(filePath);
-        
+
         if (stats.isDirectory()) {
           totalSize += this.calculateDirectorySize(filePath);
         } else {
@@ -197,7 +205,7 @@ export class PerformanceMonitorService {
     } catch (error) {
       console.error(`Failed to calculate size for ${dirPath}:`, error);
     }
-    
+
     return totalSize;
   }
 
@@ -205,14 +213,14 @@ export class PerformanceMonitorService {
    * Measure command execution time
    */
   public async measureCommandExecution<T>(
-    commandName: string, 
+    commandName: string,
     commandFunction: () => Promise<T>
   ): Promise<T> {
     const startTime = Date.now();
     let success = true;
     let errorMessage: string | undefined;
     let result: T;
-    
+
     try {
       result = await commandFunction();
     } catch (error) {
@@ -221,66 +229,65 @@ export class PerformanceMonitorService {
       throw error; // Re-throw the error after recording metrics
     } finally {
       const executionTime = Date.now() - startTime;
-      
+
       // Record command performance
       const entry: CommandPerformanceEntry = {
         commandName,
         executionTime,
         timestamp: new Date(),
         success,
-        ...(errorMessage && { errorMessage })
+        ...(errorMessage && { errorMessage }),
       };
-      
+
       this.commandHistory.push(entry);
-      
+
       // Keep only last 100 entries to prevent memory bloat
       if (this.commandHistory.length > 100) {
         this.commandHistory = this.commandHistory.slice(-100);
       }
-      
+
       // Update metrics
       if (!this.metrics.commandExecutionTimes[commandName]) {
         this.metrics.commandExecutionTimes[commandName] = [];
       }
       this.metrics.commandExecutionTimes[commandName].push(executionTime);
-      
+
       // Keep only last 10 measurements per command
       if (this.metrics.commandExecutionTimes[commandName].length > 10) {
-        this.metrics.commandExecutionTimes[commandName] = 
+        this.metrics.commandExecutionTimes[commandName] =
           this.metrics.commandExecutionTimes[commandName].slice(-10);
       }
-      
+
       this.metrics.lastUpdate = new Date();
-      
+
       // Check thresholds
       if (executionTime > this.thresholds.maxCommandExecutionTime) {
-        console.warn(`Command ${commandName} execution time exceeded threshold: ${executionTime}ms > ${this.thresholds.maxCommandExecutionTime}ms`);
+        console.warn(
+          `Command ${commandName} execution time exceeded threshold: ${executionTime}ms > ${this.thresholds.maxCommandExecutionTime}ms`
+        );
       }
-      
+
       console.log(`Command ${commandName} executed in ${executionTime}ms (success: ${success})`);
     }
-    
+
     return result!;
   }
 
   /**
    * Measure API call performance
    */
-  public async measureApiCall<T>(
-    endpoint: string,
-    apiFunction: () => Promise<T>
-  ): Promise<T> {
+  public async measureApiCall<T>(endpoint: string, apiFunction: () => Promise<T>): Promise<T> {
     const startTime = Date.now();
     let success = true;
     let httpStatus: number | undefined;
     let errorMessage: string | undefined;
     let result: T;
-    
+
     try {
       result = await apiFunction();
     } catch (error) {
       success = false;
-      
+
       // Try to extract HTTP status from error
       if (error && typeof error === 'object') {
         const errorObj = error as any;
@@ -289,11 +296,11 @@ export class PerformanceMonitorService {
       } else {
         errorMessage = error instanceof Error ? error.message : 'Unknown error';
       }
-      
+
       throw error; // Re-throw the error after recording metrics
     } finally {
       const responseTime = Date.now() - startTime;
-      
+
       // Record API performance
       const entry: ApiPerformanceEntry = {
         endpoint,
@@ -301,38 +308,40 @@ export class PerformanceMonitorService {
         timestamp: new Date(),
         success,
         ...(httpStatus && { httpStatus }),
-        ...(errorMessage && { errorMessage })
+        ...(errorMessage && { errorMessage }),
       };
-      
+
       this.apiHistory.push(entry);
-      
+
       // Keep only last 100 entries to prevent memory bloat
       if (this.apiHistory.length > 100) {
         this.apiHistory = this.apiHistory.slice(-100);
       }
-      
+
       // Update metrics
       if (!this.metrics.apiResponseTimes[endpoint]) {
         this.metrics.apiResponseTimes[endpoint] = [];
       }
       this.metrics.apiResponseTimes[endpoint].push(responseTime);
-      
+
       // Keep only last 10 measurements per endpoint
       if (this.metrics.apiResponseTimes[endpoint].length > 10) {
-        this.metrics.apiResponseTimes[endpoint] = 
+        this.metrics.apiResponseTimes[endpoint] =
           this.metrics.apiResponseTimes[endpoint].slice(-10);
       }
-      
+
       this.metrics.lastUpdate = new Date();
-      
+
       // Check thresholds
       if (responseTime > this.thresholds.maxApiResponseTime) {
-        console.warn(`API call to ${endpoint} response time exceeded threshold: ${responseTime}ms > ${this.thresholds.maxApiResponseTime}ms`);
+        console.warn(
+          `API call to ${endpoint} response time exceeded threshold: ${responseTime}ms > ${this.thresholds.maxApiResponseTime}ms`
+        );
       }
-      
+
       console.log(`API call to ${endpoint} completed in ${responseTime}ms (success: ${success})`);
     }
-    
+
     return result!;
   }
 
@@ -341,63 +350,73 @@ export class PerformanceMonitorService {
    */
   private detectPerformanceDegradation(): string[] {
     const warnings: string[] = [];
-    
+
     // Check activation time
     if (this.metrics.activationTime > this.thresholds.maxActivationTime) {
-      warnings.push(`Activation time (${this.metrics.activationTime}ms) exceeds threshold (${this.thresholds.maxActivationTime}ms)`);
+      warnings.push(
+        `Activation time (${this.metrics.activationTime}ms) exceeds threshold (${this.thresholds.maxActivationTime}ms)`
+      );
     }
-    
+
     // Check memory usage
     if (this.metrics.memoryUsage > this.thresholds.maxMemoryUsage) {
       const memoryMB = Math.round(this.metrics.memoryUsage / (1024 * 1024));
       const thresholdMB = Math.round(this.thresholds.maxMemoryUsage / (1024 * 1024));
       warnings.push(`Memory usage (${memoryMB}MB) exceeds threshold (${thresholdMB}MB)`);
     }
-    
+
     // Check command execution times
     for (const [command, times] of Object.entries(this.metrics.commandExecutionTimes)) {
       if (times.length >= 3) {
         const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
         if (avgTime > this.thresholds.maxCommandExecutionTime) {
-          warnings.push(`Command ${command} average execution time (${Math.round(avgTime)}ms) exceeds threshold (${this.thresholds.maxCommandExecutionTime}ms)`);
+          warnings.push(
+            `Command ${command} average execution time (${Math.round(avgTime)}ms) exceeds threshold (${this.thresholds.maxCommandExecutionTime}ms)`
+          );
         }
-        
+
         // Check for performance degradation (comparing recent vs older measurements)
         if (times.length >= 6) {
           const recentTimes = times.slice(-3);
           const olderTimes = times.slice(0, 3);
           const recentAvg = recentTimes.reduce((a, b) => a + b, 0) / recentTimes.length;
           const olderAvg = olderTimes.reduce((a, b) => a + b, 0) / olderTimes.length;
-          
+
           if (recentAvg > olderAvg * this.thresholds.performanceDegradationThreshold) {
-            warnings.push(`Command ${command} performance degraded: ${Math.round((recentAvg / olderAvg - 1) * 100)}% slower`);
+            warnings.push(
+              `Command ${command} performance degraded: ${Math.round((recentAvg / olderAvg - 1) * 100)}% slower`
+            );
           }
         }
       }
     }
-    
+
     // Check API response times
     for (const [endpoint, times] of Object.entries(this.metrics.apiResponseTimes)) {
       if (times.length >= 3) {
         const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
         if (avgTime > this.thresholds.maxApiResponseTime) {
-          warnings.push(`API ${endpoint} average response time (${Math.round(avgTime)}ms) exceeds threshold (${this.thresholds.maxApiResponseTime}ms)`);
+          warnings.push(
+            `API ${endpoint} average response time (${Math.round(avgTime)}ms) exceeds threshold (${this.thresholds.maxApiResponseTime}ms)`
+          );
         }
-        
+
         // Check for performance degradation
         if (times.length >= 6) {
           const recentTimes = times.slice(-3);
           const olderTimes = times.slice(0, 3);
           const recentAvg = recentTimes.reduce((a, b) => a + b, 0) / recentTimes.length;
           const olderAvg = olderTimes.reduce((a, b) => a + b, 0) / olderTimes.length;
-          
+
           if (recentAvg > olderAvg * this.thresholds.performanceDegradationThreshold) {
-            warnings.push(`API ${endpoint} performance degraded: ${Math.round((recentAvg / olderAvg - 1) * 100)}% slower`);
+            warnings.push(
+              `API ${endpoint} performance degraded: ${Math.round((recentAvg / olderAvg - 1) * 100)}% slower`
+            );
           }
         }
       }
     }
-    
+
     return warnings;
   }
 
@@ -406,17 +425,18 @@ export class PerformanceMonitorService {
    */
   private generateRecommendations(): string[] {
     const recommendations: string[] = [];
-    
+
     // Bundle size recommendations
-    if (this.metrics.extensionSize > 5 * 1024 * 1024) { // 5MB
+    if (this.metrics.extensionSize > 5 * 1024 * 1024) {
+      // 5MB
       recommendations.push('Consider optimizing bundle size - current size exceeds 5MB');
     }
-    
+
     // Memory usage recommendations
     if (this.metrics.memoryUsage > this.thresholds.maxMemoryUsage * 0.8) {
       recommendations.push('Memory usage is approaching threshold - consider memory optimization');
     }
-    
+
     // Command performance recommendations
     const slowCommands = Object.entries(this.metrics.commandExecutionTimes)
       .filter(([, times]) => {
@@ -424,11 +444,11 @@ export class PerformanceMonitorService {
         return avgTime > this.thresholds.maxCommandExecutionTime * 0.8;
       })
       .map(([command]) => command);
-    
+
     if (slowCommands.length > 0) {
       recommendations.push(`Consider optimizing slow commands: ${slowCommands.join(', ')}`);
     }
-    
+
     // API performance recommendations
     const slowApis = Object.entries(this.metrics.apiResponseTimes)
       .filter(([, times]) => {
@@ -436,11 +456,11 @@ export class PerformanceMonitorService {
         return avgTime > this.thresholds.maxApiResponseTime * 0.8;
       })
       .map(([endpoint]) => endpoint);
-    
+
     if (slowApis.length > 0) {
       recommendations.push(`Consider caching or optimizing slow API calls: ${slowApis.join(', ')}`);
     }
-    
+
     return recommendations;
   }
 
@@ -452,25 +472,32 @@ export class PerformanceMonitorService {
     const allApiTimes = Object.values(this.metrics.apiResponseTimes).flat();
     const successfulCommands = this.commandHistory.filter(entry => entry.success).length;
     const successfulApiCalls = this.apiHistory.filter(entry => entry.success).length;
-    
+
     const report: PerformanceReport = {
       summary: {
         avgActivationTime: this.metrics.activationTime,
         avgMemoryUsage: this.metrics.memoryUsage,
         totalCommands: this.commandHistory.length,
         totalApiCalls: this.apiHistory.length,
-        avgCommandTime: allCommandTimes.length > 0 ? 
-          Math.round(allCommandTimes.reduce((a, b) => a + b, 0) / allCommandTimes.length) : 0,
-        avgApiResponseTime: allApiTimes.length > 0 ? 
-          Math.round(allApiTimes.reduce((a, b) => a + b, 0) / allApiTimes.length) : 0,
-        successRate: Math.round(((successfulCommands + successfulApiCalls) / 
-          Math.max(1, this.commandHistory.length + this.apiHistory.length)) * 100)
+        avgCommandTime:
+          allCommandTimes.length > 0
+            ? Math.round(allCommandTimes.reduce((a, b) => a + b, 0) / allCommandTimes.length)
+            : 0,
+        avgApiResponseTime:
+          allApiTimes.length > 0
+            ? Math.round(allApiTimes.reduce((a, b) => a + b, 0) / allApiTimes.length)
+            : 0,
+        successRate: Math.round(
+          ((successfulCommands + successfulApiCalls) /
+            Math.max(1, this.commandHistory.length + this.apiHistory.length)) *
+            100
+        ),
       },
       degradationWarnings: this.detectPerformanceDegradation(),
       recommendations: this.generateRecommendations(),
-      detailedMetrics: { ...this.metrics }
+      detailedMetrics: { ...this.metrics },
     };
-    
+
     return report;
   }
 
@@ -479,7 +506,7 @@ export class PerformanceMonitorService {
    */
   public logPerformanceDashboard(): void {
     const report = this.generateReport();
-    
+
     console.log('\n=== PERFORMANCE DASHBOARD ===');
     console.log(`Activation Time: ${report.summary.avgActivationTime}ms`);
     console.log(`Memory Usage: ${Math.round(report.summary.avgMemoryUsage / (1024 * 1024))}MB`);
@@ -489,17 +516,17 @@ export class PerformanceMonitorService {
     console.log(`Average Command Time: ${report.summary.avgCommandTime}ms`);
     console.log(`Average API Response Time: ${report.summary.avgApiResponseTime}ms`);
     console.log(`Success Rate: ${report.summary.successRate}%`);
-    
+
     if (report.degradationWarnings.length > 0) {
       console.log('\n⚠️ PERFORMANCE WARNINGS:');
       report.degradationWarnings.forEach(warning => console.log(`  - ${warning}`));
     }
-    
+
     if (report.recommendations.length > 0) {
       console.log('\n💡 RECOMMENDATIONS:');
       report.recommendations.forEach(rec => console.log(`  - ${rec}`));
     }
-    
+
     console.log(`\nLast Update: ${this.metrics.lastUpdate.toLocaleString()}`);
     console.log('=============================\n');
   }
@@ -509,7 +536,7 @@ export class PerformanceMonitorService {
    */
   public async showPerformanceDashboard(): Promise<void> {
     const report = this.generateReport();
-    
+
     const dashboardContent = [
       '=== PERFORMANCE DASHBOARD ===',
       '',
@@ -522,9 +549,9 @@ export class PerformanceMonitorService {
       `  • Avg Command Time: ${report.summary.avgCommandTime}ms`,
       `  • Avg API Response: ${report.summary.avgApiResponseTime}ms`,
       `  • Success Rate: ${report.summary.successRate}%`,
-      ''
+      '',
     ];
-    
+
     if (report.degradationWarnings.length > 0) {
       dashboardContent.push('⚠️ PERFORMANCE WARNINGS:');
       report.degradationWarnings.forEach(warning => {
@@ -532,7 +559,7 @@ export class PerformanceMonitorService {
       });
       dashboardContent.push('');
     }
-    
+
     if (report.recommendations.length > 0) {
       dashboardContent.push('💡 RECOMMENDATIONS:');
       report.recommendations.forEach(rec => {
@@ -540,14 +567,14 @@ export class PerformanceMonitorService {
       });
       dashboardContent.push('');
     }
-    
+
     dashboardContent.push(`Last Update: ${this.metrics.lastUpdate.toLocaleString()}`);
-    
+
     // Show in information message
     const message = dashboardContent.join('\n');
     await vscode.window.showInformationMessage('Performance Dashboard', {
       modal: true,
-      detail: message
+      detail: message,
     });
   }
 
@@ -582,12 +609,12 @@ export class PerformanceMonitorService {
       commandExecutionTimes: {},
       apiResponseTimes: {},
       extensionSize: 0,
-      lastUpdate: new Date()
+      lastUpdate: new Date(),
     };
     this.commandHistory = [];
     this.apiHistory = [];
     this.activationStartTime = 0;
-    
+
     console.log('Performance metrics reset');
   }
 
@@ -599,7 +626,7 @@ export class PerformanceMonitorService {
       clearInterval(this.memoryMonitorInterval);
       this.memoryMonitorInterval = undefined;
     }
-    
+
     console.log('PerformanceMonitorService disposed');
   }
 }

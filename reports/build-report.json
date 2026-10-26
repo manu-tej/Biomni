@@ -1,0 +1,23 @@
+{
+    "timestamp": "2025-09-11T19:50:29Z",
+    "buildDuration": 13,
+    "status": "success",
+    "bundle": {
+        "size": 155835,
+        "sourcemap": true
+    },
+    "vsix": {
+        "created": true,
+        "size": 352031
+    },
+    "optimization": {
+        "assetsOptimized": true,
+        "bundleAnalyzed": true,
+        "minified": true
+    },
+    "validation": {
+        "testsRun": true,
+        "productionTested": true,
+        "vsixValidated": true
+    }
+}

@@ -1,42 +1,83 @@
+# VSCode specific
 .vscode/**
 .vscode-test/**
+
+# Test files and output
+test/**
+tests/**
 out/**/*.test.js
 out/**/*.test.js.map
+coverage/**
+.nyc_output/**
+jest.config.js
+**/*.spec.js
+**/*.spec.ts
+**/*.test.js
+**/*.test.ts
+
+# Source files (keep only compiled output)
 src/**
-!out/webview/style.css
-!out/webview/webview-client.js
-.gitignore
-.yarnrc
-vsc-extension-quickstart.md
+**/*.ts
+!**/*.d.ts
+**/*.map
 **/tsconfig.json
 **/tslint.json
-**/*.map
-**/*.ts
 **/.eslintrc.json
-node_modules/**
-!node_modules/ws
-!node_modules/ws/**
-!node_modules/@vscode
-!node_modules/@vscode/**
-test/**
+
+# Development and build files
 scripts/**
 .github/**
 .claude/**
 .claude-flow/**
 scratch_notes/**
 docs/**
+webpack.config.js
+webpack.*.js
+.gitignore
+.gitattributes
+.yarnrc
+vsc-extension-quickstart.md
+package-lock.json
+yarn.lock
+build.config.js
+webpack-stats.json
+*.md
+test*.md
+test*.html
+test*.fasta
+EPIC-STATUS.md
+EXTENSION_STATUS.md
+TASK_STATUS_UPDATE_SUMMARY.md
+BUILD.md
+
+# Build artifacts and temp files
+dist/**
+tmp/**
+temp/**
 *.vsix
 .DS_Store
 **/*.log
-coverage/**
-.nyc_output/**
-tmp/**
-dist/**
+reports/**
+
+# Git and version control
 .git/**
-.gitattributes
-jest.config.js
-test-commands.md
-test-extension.md
-EXTENSION_STATUS.md
-biomni-mcp-integration-*.vsix
-package-lock.json
+.svn/**
+
+# Node modules (exclude all except required dependencies)
+node_modules/**
+!node_modules/ws/**
+
+# Output files we want to keep
+!dist/extension.js
+!dist/453.extension.js
+!out/webview/**
+!syntaxes/**
+!language-configuration.json
+!images/**
+
+# Exclude development images, keep only required icons
+images/dev/**
+images/screenshots/**
+!images/biomni-icon.png
+!images/biomni-light.svg
+!images/biomni-dark.svg

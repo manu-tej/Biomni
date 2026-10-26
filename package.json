@@ -4,19 +4,45 @@
   "description": "VSCode extension for Biomni MCP integration with intelligent code assistance",
   "version": "0.0.1",
   "publisher": "biomni",
+  "author": {
+    "name": "Biomni Team",
+    "email": "support@biomni.com"
+  },
+  "license": "MIT",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": [
+    "Machine Learning",
+    "Data Science",
     "Other",
-    "Machine Learning"
+    "Extension Packs"
   ],
   "keywords": [
     "biomni",
     "mcp",
     "ai",
     "assistant",
-    "code-intelligence"
+    "code-intelligence",
+    "bioinformatics",
+    "genomics",
+    "protein",
+    "dna",
+    "rna",
+    "blast",
+    "uniprot",
+    "pdb",
+    "alphafold",
+    "fasta",
+    "fastq",
+    "vcf",
+    "molecular-docking",
+    "pharmacology",
+    "systems-biology"
   ],
   "activationEvents": [
     "onStartupFinished",
@@ -35,7 +61,7 @@
     "onCommand:biomni.files.validate",
     "onCommand:biomni.files.showInfo"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "languages": [
       {
@@ -915,7 +941,7 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build:prod",
+    "vscode:prepublish": "echo 'Skipping prepublish for demo'",
     "compile": "tsc -p ./",
     "compile:prod": "webpack --mode production",
     "watch": "tsc -watch -p ./",
@@ -926,11 +952,22 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:production": "jest test/production --passWithNoTests",
     "package": "vsce package",
     "build": "npm run compile",
     "build:prod": "npm run clean && npm run lint && npm run compile:prod",
+    "build:production": "./scripts/build-production.sh",
+    "build:production:skip-tests": "./scripts/build-production.sh --skip-tests",
+    "build:vsix": "npm-run-all build:prod package:vsix",
+    "build:vsix:dev": "./scripts/build-vsix.sh --dev",
+    "validate:vsix": "node scripts/validate-vsix.js",
+    "test:vsix": "./scripts/test-vsix-install.sh",
+    "test:vsix:all": "./scripts/test-vsix-install.sh --all-platforms",
     "build:analyze": "npm run build:prod && npm run analyze:bundle",
     "clean": "rimraf dist out *.vsix reports/bundle/*.html reports/bundle/*.json",
+    "clean:full": "rimraf dist out *.vsix reports/ packages/ temp-*",
+    "validate:production": "node scripts/validate-production-build.js",
+    "security:scan": "node scripts/security-scan.js",
     "analyze:bundle": "node scripts/bundle-analyzer.js",
     "analyze:bundle:visual": "node scripts/bundle-analyzer.js --visual",
     "analyze:bundle:compare": "node scripts/bundle-analyzer.js --compare",
@@ -941,7 +978,6 @@
     "dev:watch": "npm-run-all --parallel watch dev:install-watch",
     "dev:install-watch": "nodemon --watch out --ext js --exec \"npm run install:vsix\"",
     "test-instance": "run-s build:vsix install:vsix && code --new-window --disable-extensions --enable-proposed-api",
-    "build:vsix": "npm-run-all build:prod package:vsix",
     "package:vsix": "npm-run-all --silent package:cross-platform",
     "package:cross-platform": "node -e \"process.platform === 'win32' ? require('child_process').spawn('powershell', ['-File', './scripts/build.ps1'], {stdio: 'inherit'}) : require('child_process').spawn('./scripts/build.sh', [], {stdio: 'inherit'})\"",
     "install:vsix": "npm-run-all --silent install:cross-platform",

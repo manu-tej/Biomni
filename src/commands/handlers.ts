@@ -43,7 +43,7 @@ export class BiomniCommandHandlers {
     this.performanceMonitor = PerformanceMonitorService.getInstance();
     this.cacheManager = CacheManagerService.getInstance();
     this.lazyLoader = LazyLoaderService.getInstance();
-    
+
     // Ensure the output channel is visible in the Output dropdown
     // by writing an initialization line at construction time.
     try {
@@ -174,10 +174,10 @@ export class BiomniCommandHandlers {
 
     // Execute with performance monitoring and cache the result
     const result = await this.executeWithPerformanceMonitoring(commandName, commandFunction);
-    
+
     // Cache the result for future use
     await this.cacheManager.set(category, cacheKey, result, customTtl);
-    
+
     return result;
   }
 
@@ -192,10 +192,10 @@ export class BiomniCommandHandlers {
   /**
    * Generate cache key for command results
    */
-  private generateCommandCacheKey(commandName: string, params: any): string {
-    const paramsHash = this.hashObject(params);
-    return `${commandName}_${paramsHash}`;
-  }
+  // private generateCommandCacheKey(commandName: string, params: any): string {
+  //   const paramsHash = this.hashObject(params);
+  //   return `${commandName}_${paramsHash}`;
+  // }
 
   /**
    * Simple hash function for objects
@@ -205,7 +205,7 @@ export class BiomniCommandHandlers {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash).toString(36);
@@ -249,9 +249,8 @@ export class BiomniCommandHandlers {
             cacheKey,
             CacheCategory.API_RESPONSES,
             async () => {
-              return await this.performanceMonitor.measureApiCall(
-                'query_uniprot',
-                () => this.mcpClient!.callTool('query_uniprot', params)
+              return await this.performanceMonitor.measureApiCall('query_uniprot', () =>
+                this.mcpClient!.callTool('query_uniprot', params)
               );
             },
             10 * 60 * 1000 // 10 minute TTL for UniProt queries
@@ -1919,24 +1918,27 @@ print(result)
   async handleClearCache(): Promise<void> {
     try {
       const cacheStats = this.cacheManager.getStats();
-      
+
       if (cacheStats.totalEntries === 0) {
         void vscode.window.showInformationMessage('Cache is already empty');
         return;
       }
 
       const categories = [
-        { label: 'All Categories', detail: `Clear all ${cacheStats.totalEntries} cached entries (${Math.round(cacheStats.totalSize / 1024)}KB)` },
+        {
+          label: 'All Categories',
+          detail: `Clear all ${cacheStats.totalEntries} cached entries (${Math.round(cacheStats.totalSize / 1024)}KB)`,
+        },
         { label: 'API Responses', detail: 'Clear cached API responses' },
-        { label: 'Command Results', detail: 'Clear cached command results' }, 
+        { label: 'Command Results', detail: 'Clear cached command results' },
         { label: 'Analysis Results', detail: 'Clear cached analysis results' },
         { label: 'Tool Definitions', detail: 'Clear cached tool definitions' },
         { label: 'User Preferences', detail: 'Clear cached user preferences' },
-        { label: 'File Content', detail: 'Clear cached file content' }
+        { label: 'File Content', detail: 'Clear cached file content' },
       ];
 
       const selection = await vscode.window.showQuickPick(categories, {
-        placeHolder: 'Select cache category to clear'
+        placeHolder: 'Select cache category to clear',
       });
 
       if (!selection) {
@@ -1949,22 +1951,21 @@ print(result)
         'Analysis Results': CacheCategory.ANALYSIS_RESULTS,
         'Tool Definitions': CacheCategory.TOOL_DEFINITIONS,
         'User Preferences': CacheCategory.USER_PREFERENCES,
-        'File Content': CacheCategory.FILE_CONTENT
+        'File Content': CacheCategory.FILE_CONTENT,
       };
 
       const category = categoryMap[selection.label];
-      
+
       // Clear the selected category
       await this.cacheManager.clear(category);
-      
-      const message = category ? 
-        `Cleared ${selection.label.toLowerCase()} cache` : 
-        `Cleared all cache (${cacheStats.totalEntries} entries)`;
-      
+
+      const message = category
+        ? `Cleared ${selection.label.toLowerCase()} cache`
+        : `Cleared all cache (${cacheStats.totalEntries} entries)`;
+
       void vscode.window.showInformationMessage(message);
-      
+
       console.log(`Cache cleared: ${selection.label}`);
-      
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       void vscode.window.showErrorMessage(`Failed to clear cache: ${errorMsg}`);
@@ -1984,7 +1985,7 @@ print(result)
   }
 
   /**
-   * Handle lazy loading dashboard display  
+   * Handle lazy loading dashboard display
    */
   async handleShowLazyLoadDashboard(): Promise<void> {
     try {
@@ -2364,7 +2365,7 @@ print(result)
    */
   dispose(): void {
     this.outputChannel.dispose();
-    
+
     // Dispose cache manager and lazy loader
     if (this.cacheManager) {
       this.cacheManager.dispose();

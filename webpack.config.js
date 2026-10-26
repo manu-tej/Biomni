@@ -20,8 +20,8 @@ const config = {
     externals: {
         vscode: 'commonjs vscode',
         // Add other node modules that should not be bundled
-        'keytar': 'commonjs keytar',
-        'ws': 'commonjs ws'
+        'keytar': 'commonjs keytar'
+        // Note: ws is removed from externals so it gets bundled
     },
     
     resolve: {

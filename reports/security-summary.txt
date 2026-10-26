@@ -1,0 +1,33 @@
+Security Scan Summary
+====================
+
+Scan Date: 2025-09-11T17:38:45.596Z
+Risk Score: 100/100 (Critical)
+
+Critical Issues: 3
+Errors: 0
+Warnings: 1
+Passed Checks: 1
+
+Findings by Severity:
+
+CRITICAL:
+  - Credentials: API Keys: Potential credential exposure: ApiKey:"apiKeys.ncbiApiKeySet"...
+    File: extension.js:1
+  - Credentials: API Keys: Potential credential exposure: ApiKey:"apiKeys.uniprotApiKeySet"...
+    File: extension.js:1
+  - Credentials: API Keys: Potential credential exposure: ApiKey:"apiKeys.ensemblApiKeySet"...
+    File: extension.js:1
+
+WARNINGS:
+  - Source Maps: Source maps enabled in production (may expose source code)
+
+Recommendations:
+- URGENT: Address critical security issues immediately
+- Review and remove any exposed credentials
+- Consider regenerating any potentially compromised keys
+- Review and address security warnings
+- Consider removing sensitive information from build
+- Implement regular security scanning in CI/CD
+- Consider using dependency scanning tools
+- Keep dependencies updated regularly

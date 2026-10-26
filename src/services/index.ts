@@ -1,41 +1,41 @@
 // Services index - Export all service classes and their types
 
 // Performance Monitoring Service
-export { 
+export {
   PerformanceMonitorService,
   type PerformanceMetrics,
   type CommandPerformanceEntry,
   type ApiPerformanceEntry,
   type PerformanceReport,
-  type PerformanceThresholds
+  type PerformanceThresholds,
 } from './performanceMonitor';
 
 // Cache Manager Service
-export { 
+export {
   CacheManagerService,
   CacheCategory,
   type CacheEntry,
   type CacheStats,
-  type CacheConfig
+  type CacheConfig,
 } from './cacheManager';
 
 // Lazy Loader Service
-export { 
+export {
   LazyLoaderService,
   type LazyResource,
   type LoadingState,
   type LazyLoadStats,
-  type LazyLoadConfig
+  type LazyLoadConfig,
 } from './lazyLoader';
 
-// Genomics Tools Service  
-export { 
+// Genomics Tools Service
+export {
   GenomicsToolsService,
   type BlastParams,
   type BlastResult,
   type AnnotationOptions,
   type AnnotationResult,
-  type SequenceAnalysis
+  type SequenceAnalysis,
 } from './genomicsTools';
 
 // Command Palette Service

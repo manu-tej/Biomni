@@ -1,310 +1,46 @@
 [
   {
-    "timestamp": "2025-09-08T20:35:02.607Z",
+    "timestamp": "2025-09-11T19:50:25.202Z",
     "files": {
       "453.extension.js": {
         "size": 25713,
         "gzippedSize": 5406,
         "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js",
-        "percentage": 4.208099031808273
+        "percentage": 0.8928931084056199
       },
       "453.extension.js.map": {
         "size": 29363,
         "gzippedSize": 6593,
         "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js.map",
-        "percentage": 4.80544517835283
+        "percentage": 1.0196406620042087
+      },
+      "bundle-analysis.html": {
+        "size": 281439,
+        "gzippedSize": 92805,
+        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/bundle-analysis.html",
+        "percentage": 9.7730697910228
       },
       "extension.js": {
-        "size": 130194,
-        "gzippedSize": 32957,
+        "size": 155835,
+        "gzippedSize": 39420,
         "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js",
-        "percentage": 21.307091562526594
+        "percentage": 5.411426031516734
       },
       "extension.js.map": {
-        "size": 425766,
-        "gzippedSize": 99530,
+        "size": 523556,
+        "gzippedSize": 122709,
         "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js.map",
-        "percentage": 69.6793642273123
+        "percentage": 18.180669088181574
+      },
+      "stats.json": {
+        "size": 1863834,
+        "gzippedSize": 39332,
+        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/stats.json",
+        "percentage": 64.72230131886907
       }
     },
-    "totalSize": 611036,
-    "gzippedSize": 144486,
-    "moduleBreakdown": [],
-    "dependencies": {
-      "production": [
-        "@vscode/webview-ui-toolkit",
-        "ws"
-      ],
-      "development": [
-        "@types/jest",
-        "@types/node",
-        "@types/vscode",
-        "@types/ws",
-        "@typescript-eslint/eslint-plugin",
-        "@typescript-eslint/parser",
-        "@vscode/test-electron",
-        "@vscode/vsce",
-        "autoprefixer",
-        "css-loader",
-        "cssnano",
-        "eslint",
-        "eslint-config-prettier",
-        "eslint-plugin-prettier",
-        "jest",
-        "nodemon",
-        "npm-run-all",
-        "postcss-loader",
-        "prettier",
-        "rimraf",
-        "style-loader",
-        "svgo-loader",
-        "terser-webpack-plugin",
-        "ts-jest",
-        "ts-loader",
-        "typescript",
-        "webpack-bundle-analyzer",
-        "webpack-cli"
-      ],
-      "total": 30
-    }
-  },
-  {
-    "timestamp": "2025-09-08T20:38:15.883Z",
-    "files": {
-      "453.extension.js": {
-        "size": 25713,
-        "gzippedSize": 5406,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js",
-        "percentage": 3.956558334346336
-      },
-      "453.extension.js.map": {
-        "size": 29363,
-        "gzippedSize": 6593,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js.map",
-        "percentage": 4.518197891004997
-      },
-      "extension.js": {
-        "size": 138321,
-        "gzippedSize": 34935,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js",
-        "percentage": 21.283984963447267
-      },
-      "extension.js.map": {
-        "size": 456486,
-        "gzippedSize": 106397,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js.map",
-        "percentage": 70.2412588112014
-      }
-    },
-    "totalSize": 649883,
-    "gzippedSize": 153331,
-    "moduleBreakdown": [],
-    "dependencies": {
-      "production": [
-        "@vscode/webview-ui-toolkit",
-        "ws"
-      ],
-      "development": [
-        "@types/jest",
-        "@types/node",
-        "@types/vscode",
-        "@types/ws",
-        "@typescript-eslint/eslint-plugin",
-        "@typescript-eslint/parser",
-        "@vscode/test-electron",
-        "@vscode/vsce",
-        "autoprefixer",
-        "css-loader",
-        "cssnano",
-        "eslint",
-        "eslint-config-prettier",
-        "eslint-plugin-prettier",
-        "jest",
-        "nodemon",
-        "npm-run-all",
-        "postcss-loader",
-        "prettier",
-        "rimraf",
-        "style-loader",
-        "svgo-loader",
-        "terser-webpack-plugin",
-        "ts-jest",
-        "ts-loader",
-        "typescript",
-        "webpack-bundle-analyzer",
-        "webpack-cli"
-      ],
-      "total": 30
-    }
-  },
-  {
-    "timestamp": "2025-09-08T20:38:22.211Z",
-    "files": {
-      "453.extension.js": {
-        "size": 25713,
-        "gzippedSize": 5406,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js",
-        "percentage": 4.188276149646213
-      },
-      "453.extension.js.map": {
-        "size": 29363,
-        "gzippedSize": 6593,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js.map",
-        "percentage": 4.7828084075005535
-      },
-      "extension.js": {
-        "size": 130758,
-        "gzippedSize": 33068,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js",
-        "percentage": 21.298588759593958
-      },
-      "extension.js.map": {
-        "size": 428094,
-        "gzippedSize": 100046,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js.map",
-        "percentage": 69.73032668325926
-      }
-    },
-    "totalSize": 613928,
-    "gzippedSize": 145113,
-    "moduleBreakdown": [],
-    "dependencies": {
-      "production": [
-        "@vscode/webview-ui-toolkit",
-        "ws"
-      ],
-      "development": [
-        "@types/jest",
-        "@types/node",
-        "@types/vscode",
-        "@types/ws",
-        "@typescript-eslint/eslint-plugin",
-        "@typescript-eslint/parser",
-        "@vscode/test-electron",
-        "@vscode/vsce",
-        "autoprefixer",
-        "css-loader",
-        "cssnano",
-        "eslint",
-        "eslint-config-prettier",
-        "eslint-plugin-prettier",
-        "jest",
-        "nodemon",
-        "npm-run-all",
-        "postcss-loader",
-        "prettier",
-        "rimraf",
-        "style-loader",
-        "svgo-loader",
-        "terser-webpack-plugin",
-        "ts-jest",
-        "ts-loader",
-        "typescript",
-        "webpack-bundle-analyzer",
-        "webpack-cli"
-      ],
-      "total": 30
-    }
-  },
-  {
-    "timestamp": "2025-09-08T20:38:30.308Z",
-    "files": {
-      "453.extension.js": {
-        "size": 25713,
-        "gzippedSize": 5406,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js",
-        "percentage": 4.188276149646213
-      },
-      "453.extension.js.map": {
-        "size": 29363,
-        "gzippedSize": 6593,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js.map",
-        "percentage": 4.7828084075005535
-      },
-      "extension.js": {
-        "size": 130758,
-        "gzippedSize": 33068,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js",
-        "percentage": 21.298588759593958
-      },
-      "extension.js.map": {
-        "size": 428094,
-        "gzippedSize": 100046,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js.map",
-        "percentage": 69.73032668325926
-      }
-    },
-    "totalSize": 613928,
-    "gzippedSize": 145113,
-    "moduleBreakdown": [],
-    "dependencies": {
-      "production": [
-        "@vscode/webview-ui-toolkit",
-        "ws"
-      ],
-      "development": [
-        "@types/jest",
-        "@types/node",
-        "@types/vscode",
-        "@types/ws",
-        "@typescript-eslint/eslint-plugin",
-        "@typescript-eslint/parser",
-        "@vscode/test-electron",
-        "@vscode/vsce",
-        "autoprefixer",
-        "css-loader",
-        "cssnano",
-        "eslint",
-        "eslint-config-prettier",
-        "eslint-plugin-prettier",
-        "jest",
-        "nodemon",
-        "npm-run-all",
-        "postcss-loader",
-        "prettier",
-        "rimraf",
-        "style-loader",
-        "svgo-loader",
-        "terser-webpack-plugin",
-        "ts-jest",
-        "ts-loader",
-        "typescript",
-        "webpack-bundle-analyzer",
-        "webpack-cli"
-      ],
-      "total": 30
-    }
-  },
-  {
-    "timestamp": "2025-09-08T20:38:52.225Z",
-    "files": {
-      "453.extension.js": {
-        "size": 25713,
-        "gzippedSize": 5406,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js",
-        "percentage": 4.188276149646213
-      },
-      "453.extension.js.map": {
-        "size": 29363,
-        "gzippedSize": 6593,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js.map",
-        "percentage": 4.7828084075005535
-      },
-      "extension.js": {
-        "size": 130758,
-        "gzippedSize": 33068,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js",
-        "percentage": 21.298588759593958
-      },
-      "extension.js.map": {
-        "size": 428094,
-        "gzippedSize": 100046,
-        "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js.map",
-        "percentage": 69.73032668325926
-      }
-    },
-    "totalSize": 613928,
-    "gzippedSize": 145113,
+    "totalSize": 2879740,
+    "gzippedSize": 306265,
     "moduleBreakdown": [],
     "dependencies": {
       "production": [

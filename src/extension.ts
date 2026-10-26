@@ -26,7 +26,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Initialize performance monitoring FIRST to track activation time
   performanceMonitor = PerformanceMonitorService.getInstance();
   performanceMonitor.initialize(context);
-  
+
   // Immediate output to verify activation is called
   void vscode.window.showInformationMessage('🚀 Biomni Extension: Activation starting...');
   console.log('===== BIOMNI EXTENSION ACTIVATION STARTED =====');
@@ -125,7 +125,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   console.log('===== BIOMNI EXTENSION ACTIVATION COMPLETE =====');
   console.log(`Total commands registered: ${BIOMNI_COMMANDS.length}`);
-  
+
   // Complete performance monitoring activation measurement
   if (performanceMonitor) {
     performanceMonitor.completeActivationMeasurement();
@@ -411,7 +411,9 @@ function registerLegacyCommands(context: vscode.ExtensionContext): void {
         await performanceMonitor.showPerformanceDashboard();
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        void vscode.window.showErrorMessage(`Failed to show performance dashboard: ${errorMessage}`);
+        void vscode.window.showErrorMessage(
+          `Failed to show performance dashboard: ${errorMessage}`
+        );
       }
     }),
 

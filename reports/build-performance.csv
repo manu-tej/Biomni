@@ -1,0 +1,9 @@
+Stage,Duration(s)
+Clean Build,0
+Asset Optimization,0
+Webpack Build,3
+Bundle Analysis,4
+Build Verification,0
+VSIX Creation,1
+Post-build Validation,1
+Report Generation,0

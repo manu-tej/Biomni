@@ -1,0 +1,40 @@
+Production Build Validation Summary
+=====================================
+
+Timestamp: 2025-09-11T17:38:41.481Z
+Status: FAILED
+
+Tests Passed: 17
+Warnings: 2
+Errors: 1
+
+Metrics:
+  bundle-size: 152KB
+  build-time: 10s
+  module-count: 37
+
+Errors:
+  ❌ security-sensitive: Potential api-keys found in bundle
+
+Warnings:
+  ⚠️  test-code-removal: Test code may be included in bundle
+  ⚠️  vsix: Packages directory not found
+
+Passed Tests:
+  ✅ main-bundle: 152KB
+  ✅ source-map: Source map generated
+  ✅ reports: Reports directory exists
+  ✅ minification: Average line length: 77736
+  ✅ console-removal: Console.log statements removed
+  ✅ debugger-removal: Debugger statements removed
+  ✅ vscode-external: VSCode API properly externalized
+  ✅ size-limit: 3.0% of VSCode limit
+  ✅ size-warning: Under warning threshold
+  ✅ sourcemap-version: Valid source map version 3
+  ✅ sourcemap-sources: 36 source files mapped
+  ✅ sourcemap-mappings: Source mappings present
+  ✅ security-paths: No file system paths leaked
+  ✅ performance-build-time: 10s (under 30s limit)
+  ✅ bundle-analysis: Bundle analysis report generated
+  ✅ bundle-stats: 2 assets analyzed
+  ✅ bundle-duplicates: No duplicate modules detected

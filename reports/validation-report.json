@@ -1,0 +1,125 @@
+{
+  "timestamp": "2025-09-11T17:38:41.481Z",
+  "summary": {
+    "passed": 17,
+    "warnings": 2,
+    "errors": 1,
+    "metrics": {
+      "bundle-size": {
+        "value": 152,
+        "unit": "KB"
+      },
+      "build-time": {
+        "value": 10,
+        "unit": "s"
+      },
+      "module-count": {
+        "value": 37,
+        "unit": ""
+      }
+    },
+    "valid": false
+  },
+  "details": {
+    "passed": [
+      {
+        "test": "main-bundle",
+        "details": "152KB"
+      },
+      {
+        "test": "source-map",
+        "details": "Source map generated"
+      },
+      {
+        "test": "reports",
+        "details": "Reports directory exists"
+      },
+      {
+        "test": "minification",
+        "details": "Average line length: 77736"
+      },
+      {
+        "test": "console-removal",
+        "details": "Console.log statements removed"
+      },
+      {
+        "test": "debugger-removal",
+        "details": "Debugger statements removed"
+      },
+      {
+        "test": "vscode-external",
+        "details": "VSCode API properly externalized"
+      },
+      {
+        "test": "size-limit",
+        "details": "3.0% of VSCode limit"
+      },
+      {
+        "test": "size-warning",
+        "details": "Under warning threshold"
+      },
+      {
+        "test": "sourcemap-version",
+        "details": "Valid source map version 3"
+      },
+      {
+        "test": "sourcemap-sources",
+        "details": "36 source files mapped"
+      },
+      {
+        "test": "sourcemap-mappings",
+        "details": "Source mappings present"
+      },
+      {
+        "test": "security-paths",
+        "details": "No file system paths leaked"
+      },
+      {
+        "test": "performance-build-time",
+        "details": "10s (under 30s limit)"
+      },
+      {
+        "test": "bundle-analysis",
+        "details": "Bundle analysis report generated"
+      },
+      {
+        "test": "bundle-stats",
+        "details": "2 assets analyzed"
+      },
+      {
+        "test": "bundle-duplicates",
+        "details": "No duplicate modules detected"
+      }
+    ],
+    "warnings": [
+      {
+        "test": "test-code-removal",
+        "message": "Test code may be included in bundle"
+      },
+      {
+        "test": "vsix",
+        "message": "Packages directory not found"
+      }
+    ],
+    "errors": [
+      {
+        "test": "security-sensitive",
+        "message": "Potential api-keys found in bundle"
+      }
+    ]
+  },
+  "metrics": {
+    "bundle-size": {
+      "value": 152,
+      "unit": "KB"
+    },
+    "build-time": {
+      "value": 10,
+      "unit": "s"
+    },
+    "module-count": {
+      "value": 37,
+      "unit": ""
+    }
+  }
+}

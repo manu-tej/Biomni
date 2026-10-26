@@ -1,0 +1,130 @@
+{
+  "timestamp": "2025-09-11T17:38:45.596Z",
+  "summary": {
+    "passed": 1,
+    "warnings": 1,
+    "errors": 0,
+    "critical": 3,
+    "medium": null
+  },
+  "findings": [
+    {
+      "type": "vulnerability",
+      "severity": "medium",
+      "category": "Code Vulnerability: innerHTML assignment",
+      "message": "Potentially unsafe code pattern: .innerHTML = analysisResults +\\n                                    '<br><vscode-button onclick=\"clearAnalysisResults()\">Clear Results</vscode-button>';",
+      "file": "453.extension.js",
+      "line": 1,
+      "timestamp": "2025-09-11T17:38:45.599Z"
+    },
+    {
+      "type": "vulnerability",
+      "severity": "medium",
+      "category": "Code Vulnerability: innerHTML assignment",
+      "message": "Potentially unsafe code pattern: .innerHTML = '<h3>Search Results</h3>' +\\n                                    '<p>Found results for \"<strong>' + query + '</strong>\" in ' + database.toUpperCase() + ':</p>' +\\n                                    mockResults +\\n                                    '<vscode-button onclick=\"clearResults()\">Clear Results</vscode-button>';",
+      "file": "453.extension.js",
+      "line": 1,
+      "timestamp": "2025-09-11T17:38:45.599Z"
+    },
+    {
+      "type": "security",
+      "severity": "critical",
+      "category": "Credentials: API Keys",
+      "message": "Potential credential exposure: ApiKey:\"apiKeys.ncbiApiKeySet\"...",
+      "file": "extension.js",
+      "line": 1,
+      "timestamp": "2025-09-11T17:38:45.601Z"
+    },
+    {
+      "type": "security",
+      "severity": "critical",
+      "category": "Credentials: API Keys",
+      "message": "Potential credential exposure: ApiKey:\"apiKeys.uniprotApiKeySet\"...",
+      "file": "extension.js",
+      "line": 1,
+      "timestamp": "2025-09-11T17:38:45.601Z"
+    },
+    {
+      "type": "security",
+      "severity": "critical",
+      "category": "Credentials: API Keys",
+      "message": "Potential credential exposure: ApiKey:\"apiKeys.ensemblApiKeySet\"...",
+      "file": "extension.js",
+      "line": 1,
+      "timestamp": "2025-09-11T17:38:45.601Z"
+    },
+    {
+      "type": "config",
+      "severity": "passed",
+      "category": "Build Security",
+      "message": "Security validation enabled in build config",
+      "file": null,
+      "line": null,
+      "timestamp": "2025-09-11T17:38:46.410Z"
+    },
+    {
+      "type": "config",
+      "severity": "warnings",
+      "category": "Source Maps",
+      "message": "Source maps enabled in production (may expose source code)",
+      "file": null,
+      "line": null,
+      "timestamp": "2025-09-11T17:38:46.410Z"
+    }
+  ],
+  "dependencies": {
+    "total": 30,
+    "vulnerable": [],
+    "outdated": []
+  },
+  "files": [
+    {
+      "name": "453.extension.js",
+      "size": 25702,
+      "lines": 2,
+      "findings": [
+        {
+          "type": "vulnerability",
+          "name": "innerHTML assignment",
+          "match": ".innerHTML = analysisResults +\\n                                    '<br><vscode-button onclick=\"clearAnalysisResults()\">Clear Results</vscode-button>';",
+          "severity": "medium"
+        },
+        {
+          "type": "vulnerability",
+          "name": "innerHTML assignment",
+          "match": ".innerHTML = '<h3>Search Results</h3>' +\\n                                    '<p>Found results for \"<strong>' + query + '</strong>\" in ' + database.toUpperCase() + ':</p>' +\\n                                    mockResults +\\n                                    '<vscode-button onclick=\"clearResults()\">Clear Results</vscode-button>';",
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "name": "extension.js",
+      "size": 155472,
+      "lines": 2,
+      "findings": [
+        {
+          "type": "credentials",
+          "name": "API Keys",
+          "match": "ApiKey:\"apiKeys.ncbiApiKeySet\""
+        },
+        {
+          "type": "credentials",
+          "name": "API Keys",
+          "match": "ApiKey:\"apiKeys.uniprotApiKeySet\""
+        },
+        {
+          "type": "credentials",
+          "name": "API Keys",
+          "match": "ApiKey:\"apiKeys.ensemblApiKeySet\""
+        }
+      ]
+    }
+  ],
+  "integrity": {
+    "hash": "d38459fa7ee7e546441af9851f85f6f382bb569bb98c297437fd20613d7c82d4",
+    "size": 155829,
+    "modified": "2025-09-11T17:37:59.151Z",
+    "ageMinutes": 1
+  },
+  "riskScore": 100
+}

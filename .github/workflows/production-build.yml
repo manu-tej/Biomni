@@ -1,0 +1,773 @@
+name: Production Build Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.vscode/**'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.vscode/**'
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip test execution'
+        required: false
+        default: false
+        type: boolean
+      analyze_bundle:
+        description: 'Generate bundle analysis'
+        required: false
+        default: true
+        type: boolean
+      create_vsix:
+        description: 'Create VSIX package'
+        required: false
+        default: true
+        type: boolean
+      test_vsix:
+        description: 'Run VSIX installation tests'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  CACHE_KEY_PREFIX: 'vscode-extension-v1'
+
+jobs:
+  build:
+    name: Production Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full git history for better analysis
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            ~/.npm
+            ~/.cache/webpack
+          key: ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-node${{ matrix.node-version }}-
+            ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+          npm ls || true
+
+      - name: Validate environment
+        run: |
+          echo "Node.js version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          echo "Build environment: CI"
+          
+          # Check required files
+          test -f package.json || { echo "package.json not found"; exit 1; }
+          test -f webpack.config.js || { echo "webpack.config.js not found"; exit 1; }
+          test -f build.config.js || { echo "build.config.js not found"; exit 1; }
+          
+          # Validate build configuration
+          node -e "
+            const config = require('./build.config.js');
+            const result = config.validateConfig(config.getBuildConfig('production'));
+            if (!result.valid) {
+              console.error('Build configuration errors:', result.errors);
+              process.exit(1);
+            }
+            console.log('✅ Build configuration is valid');
+          "
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          npm run test:coverage
+          echo "Test coverage summary:"
+          if [ -f coverage/coverage-summary.json ]; then
+            node -e "
+              const coverage = JSON.parse(require('fs').readFileSync('coverage/coverage-summary.json', 'utf8'));
+              const { lines, functions, branches } = coverage.total;
+              console.log(\`Lines: \${lines.pct}%\`);
+              console.log(\`Functions: \${functions.pct}%\`);
+              console.log(\`Branches: \${branches.pct}%\`);
+              
+              if (lines.pct < 80) {
+                console.warn('⚠️  Line coverage below 80%');
+              }
+            "
+          fi
+
+      - name: Upload test coverage
+        if: ${{ !inputs.skip_tests }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ matrix.node-version }}
+          path: coverage/
+          retention-days: 7
+
+      - name: Production build
+        env:
+          NODE_ENV: production
+          CI: true
+        run: |
+          echo "🚀 Starting production build..."
+          
+          # Use the production build script
+          chmod +x scripts/build-production.sh
+          ./scripts/build-production.sh ${{ inputs.skip_tests && '--skip-tests' || '' }}
+
+      - name: Verify build output
+        run: |
+          echo "🔍 Verifying build output..."
+          
+          # Check main bundle
+          test -f dist/extension.js || { echo "❌ Main bundle not found"; exit 1; }
+          test -f dist/extension.js.map || echo "⚠️  Source map not found"
+          
+          # Check bundle size
+          BUNDLE_SIZE=$(stat -c%s dist/extension.js)
+          BUNDLE_SIZE_MB=$(echo "scale=2; $BUNDLE_SIZE/1024/1024" | bc)
+          echo "📦 Bundle size: ${BUNDLE_SIZE_MB}MB"
+          
+          # Fail if bundle is too large
+          if (( $(echo "$BUNDLE_SIZE > 5242880" | bc -l) )); then
+            echo "❌ Bundle size exceeds 5MB limit: ${BUNDLE_SIZE_MB}MB"
+            exit 1
+          fi
+          
+          # Check VSIX package
+          if [ -f packages/*.vsix ]; then
+            VSIX_SIZE=$(stat -c%s packages/*.vsix)
+            VSIX_SIZE_MB=$(echo "scale=2; $VSIX_SIZE/1024/1024" | bc)
+            echo "📦 VSIX size: ${VSIX_SIZE_MB}MB"
+          fi
+
+      - name: Run production tests
+        run: |
+          echo "🧪 Running production-specific tests..."
+          npx jest test/production --passWithNoTests --verbose
+
+      - name: Security audit
+        run: |
+          echo "🔒 Running security audit..."
+          npm audit --audit-level=high || echo "⚠️  Security audit found issues"
+
+      - name: Generate bundle analysis
+        if: ${{ inputs.analyze_bundle || github.event_name == 'pull_request' }}
+        env:
+          ANALYZE: true
+        run: |
+          echo "📊 Generating bundle analysis..."
+          npm run analyze:bundle || true
+          
+          if [ -f reports/bundle/bundle-analysis.html ]; then
+            echo "✅ Bundle analysis report generated"
+          fi
+
+      - name: Performance regression check
+        run: |
+          echo "⚡ Checking for performance regressions..."
+          
+          # Create performance baseline if it doesn't exist
+          if [ ! -f .github/performance-baseline.json ] && [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "📝 Creating performance baseline..."
+            if [ -f reports/build-performance.csv ]; then
+              # Convert CSV to JSON baseline
+              node -e "
+                const fs = require('fs');
+                const csv = fs.readFileSync('reports/build-performance.csv', 'utf8');
+                const lines = csv.split('\n').filter(l => l.trim());
+                const baseline = { timestamp: new Date().toISOString(), stages: {} };
+                
+                for (let i = 1; i < lines.length; i++) {
+                  const [stage, duration] = lines[i].split(',');
+                  if (stage && duration) {
+                    baseline.stages[stage] = parseFloat(duration);
+                  }
+                }
+                
+                fs.writeFileSync('.github/performance-baseline.json', JSON.stringify(baseline, null, 2));
+                console.log('Performance baseline created');
+              "
+            fi
+          fi
+          
+          # Compare against baseline if PR
+          if [ -f .github/performance-baseline.json ] && [ "${{ github.event_name }}" == "pull_request" ] && [ -f reports/build-performance.csv ]; then
+            node -e "
+              const fs = require('fs');
+              const baseline = JSON.parse(fs.readFileSync('.github/performance-baseline.json', 'utf8'));
+              const csv = fs.readFileSync('reports/build-performance.csv', 'utf8');
+              const lines = csv.split('\n').filter(l => l.trim());
+              
+              let regressions = [];
+              for (let i = 1; i < lines.length; i++) {
+                const [stage, duration] = lines[i].split(',');
+                if (stage && duration && baseline.stages[stage]) {
+                  const current = parseFloat(duration);
+                  const base = baseline.stages[stage];
+                  const increase = ((current - base) / base) * 100;
+                  
+                  if (increase > 20) { // 20% regression threshold
+                    regressions.push(\`\${stage}: +\${increase.toFixed(1)}% (\${base}s → \${current}s)\`);
+                  }
+                }
+              }
+              
+              if (regressions.length > 0) {
+                console.warn('⚠️  Performance regressions detected:');
+                regressions.forEach(r => console.warn('  -', r));
+                // Don't fail the build, just warn
+              } else {
+                console.log('✅ No significant performance regressions detected');
+              }
+            "
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts-${{ matrix.node-version }}
+          path: |
+            dist/
+            packages/
+            reports/
+          retention-days: 30
+
+      - name: Upload VSIX for release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == 18
+        uses: actions/upload-artifact@v3
+        with:
+          name: vsix-release
+          path: packages/*.vsix
+          retention-days: 90
+
+  # Security scanning job
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run security audit
+        run: |
+          echo "🔒 Running comprehensive security audit..."
+          npm audit --audit-level=moderate --json > security-audit.json || true
+          
+          # Check for high/critical vulnerabilities
+          HIGH_VULNS=$(cat security-audit.json | jq '.metadata.vulnerabilities.high // 0')
+          CRITICAL_VULNS=$(cat security-audit.json | jq '.metadata.vulnerabilities.critical // 0')
+          
+          echo "Critical vulnerabilities: $CRITICAL_VULNS"
+          echo "High vulnerabilities: $HIGH_VULNS"
+          
+          if [ "$CRITICAL_VULNS" -gt 0 ]; then
+            echo "❌ Critical security vulnerabilities found!"
+            exit 1
+          fi
+          
+          if [ "$HIGH_VULNS" -gt 5 ]; then
+            echo "⚠️  Many high-severity vulnerabilities found: $HIGH_VULNS"
+            echo "Consider updating dependencies"
+          fi
+
+      - name: License compliance check
+        run: |
+          echo "📜 Checking license compliance..."
+          npx license-checker --summary || echo "License checker not available"
+
+  # Bundle analysis job
+  analyze:
+    name: Bundle Analysis
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts-18
+
+      - name: Comment bundle analysis
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let comment = '## 📊 Bundle Analysis Report\n\n';
+            
+            // Bundle size info
+            if (fs.existsSync('dist/extension.js')) {
+              const bundleSize = fs.statSync('dist/extension.js').size;
+              const bundleSizeMB = (bundleSize / 1024 / 1024).toFixed(2);
+              comment += `**Bundle Size:** ${bundleSizeMB}MB (${bundleSize} bytes)\n`;
+              
+              const limit = 5 * 1024 * 1024; // 5MB
+              const percentage = (bundleSize / limit * 100).toFixed(1);
+              comment += `**Size vs Limit:** ${percentage}% of 5MB VSCode limit\n\n`;
+            }
+            
+            // VSIX size info
+            const vsixFiles = fs.readdirSync('packages/').filter(f => f.endsWith('.vsix'));
+            if (vsixFiles.length > 0) {
+              const vsixSize = fs.statSync(`packages/${vsixFiles[0]}`).size;
+              const vsixSizeMB = (vsixSize / 1024 / 1024).toFixed(2);
+              comment += `**VSIX Package Size:** ${vsixSizeMB}MB\n\n`;
+            }
+            
+            // Performance info
+            if (fs.existsSync('reports/build-performance.csv')) {
+              const csv = fs.readFileSync('reports/build-performance.csv', 'utf8');
+              const lines = csv.split('\n').filter(l => l.trim());
+              
+              comment += '**Build Performance:**\n';
+              for (let i = 1; i < lines.length && i < 6; i++) {
+                const [stage, duration] = lines[i].split(',');
+                if (stage && duration) {
+                  comment += `- ${stage}: ${duration}s\n`;
+                }
+              }
+              comment += '\n';
+            }
+            
+            // Bundle analysis link
+            if (fs.existsSync('reports/bundle/bundle-analysis.html')) {
+              comment += '**Bundle Analysis:** Report generated (check build artifacts)\n\n';
+            }
+            
+            comment += '---\n*This comment was automatically generated by the production build pipeline.*';
+            
+            // Find existing comment to update
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const existingComment = comments.find(c => 
+              c.user.login === 'github-actions[bot]' && 
+              c.body.includes('Bundle Analysis Report')
+            );
+            
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+  # Release preparation job
+  release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    needs: [build, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: vsix-release
+          path: packages/
+
+      - name: Generate release notes
+        run: |
+          echo "# Release Notes" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Build Information" >> RELEASE_NOTES.md
+          echo "- **Build Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> RELEASE_NOTES.md
+          echo "- **Commit:** ${{ github.sha }}" >> RELEASE_NOTES.md
+          echo "- **Node.js:** ${{ env.NODE_VERSION }}" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          
+          # Add package info
+          VSIX_FILE=$(find packages/ -name "*.vsix" -type f | head -n 1)
+          if [ -n "$VSIX_FILE" ]; then
+            VSIX_SIZE=$(stat -c%s "$VSIX_FILE")
+            VSIX_SIZE_MB=$(echo "scale=2; $VSIX_SIZE/1024/1024" | bc)
+            echo "- **Package Size:** ${VSIX_SIZE_MB}MB" >> RELEASE_NOTES.md
+          fi
+          
+          echo "" >> RELEASE_NOTES.md
+          echo "## Optimizations Applied" >> RELEASE_NOTES.md
+          echo "- ✅ Webpack production build with minification" >> RELEASE_NOTES.md
+          echo "- ✅ Asset optimization (images, CSS, JS)" >> RELEASE_NOTES.md
+          echo "- ✅ Tree shaking and dead code elimination" >> RELEASE_NOTES.md
+          echo "- ✅ Bundle analysis and size validation" >> RELEASE_NOTES.md
+          echo "- ✅ Cache manager integration" >> RELEASE_NOTES.md
+          echo "- ✅ Performance monitoring" >> RELEASE_NOTES.md
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-ready
+          path: |
+            packages/
+            RELEASE_NOTES.md
+          retention-days: 365
+
+  # VSIX package creation job
+  vsix-package:
+    name: Create VSIX Package
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ inputs.create_vsix != false }}
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        target: [production, development]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install vsce globally
+        run: npm install -g @vscode/vsce
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts-18
+
+      - name: Create VSIX package
+        env:
+          BUILD_TYPE: ${{ matrix.target }}
+        run: |
+          echo "📦 Creating VSIX package (${{ matrix.target }})..."
+          
+          # Make build script executable
+          chmod +x scripts/build-vsix.sh
+          
+          # Create VSIX with appropriate options
+          if [ "${{ matrix.target }}" == "development" ]; then
+            ./scripts/build-vsix.sh --dev --output-dir ./vsix-packages
+          else
+            ./scripts/build-vsix.sh --output-dir ./vsix-packages
+          fi
+
+      - name: Validate VSIX package
+        run: |
+          echo "🔍 Validating VSIX package..."
+          
+          # Find created VSIX file
+          VSIX_FILE=$(find ./vsix-packages -name "*.vsix" -type f | head -n 1)
+          
+          if [ -z "$VSIX_FILE" ]; then
+            echo "❌ No VSIX file found!"
+            exit 1
+          fi
+          
+          echo "Found VSIX: $(basename "$VSIX_FILE")"
+          
+          # Run validation
+          node scripts/validate-vsix.js "$VSIX_FILE"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: vsix-${{ matrix.target }}
+          path: ./vsix-packages/*.vsix
+          retention-days: 30
+
+      - name: Generate VSIX report
+        run: |
+          echo "📊 Generating VSIX package report..."
+          
+          VSIX_FILE=$(find ./vsix-packages -name "*.vsix" -type f | head -n 1)
+          VSIX_SIZE=$(stat -c%s "$VSIX_FILE")
+          VSIX_SIZE_MB=$(echo "scale=2; $VSIX_SIZE/1024/1024" | bc)
+          
+          echo "# VSIX Package Report (${{ matrix.target }})" > vsix-report-${{ matrix.target }}.md
+          echo "" >> vsix-report-${{ matrix.target }}.md
+          echo "**Package:** $(basename "$VSIX_FILE")" >> vsix-report-${{ matrix.target }}.md
+          echo "**Size:** ${VSIX_SIZE_MB}MB (${VSIX_SIZE} bytes)" >> vsix-report-${{ matrix.target }}.md
+          echo "**Type:** ${{ matrix.target }}" >> vsix-report-${{ matrix.target }}.md
+          echo "**Created:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> vsix-report-${{ matrix.target }}.md
+          echo "" >> vsix-report-${{ matrix.target }}.md
+          
+          # Size validation
+          if [ "$VSIX_SIZE" -gt 5242880 ]; then
+            echo "**⚠️ Warning:** Package size exceeds 5MB VSCode limit!" >> vsix-report-${{ matrix.target }}.md
+          else
+            echo "**✅ Status:** Package size within VSCode limits" >> vsix-report-${{ matrix.target }}.md
+          fi
+
+      - name: Upload VSIX report
+        uses: actions/upload-artifact@v3
+        with:
+          name: vsix-report-${{ matrix.target }}
+          path: vsix-report-${{ matrix.target }}.md
+          retention-days: 30
+
+  # VSIX installation testing job
+  vsix-test:
+    name: Test VSIX Installation
+    runs-on: ${{ matrix.os }}
+    needs: vsix-package
+    if: ${{ inputs.test_vsix != false }}
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        vsix-type: [production]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Setup VSCode CLI (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          # Install VSCode CLI for testing
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+          sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+          sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+          sudo apt update
+          sudo apt install code
+
+      - name: Setup VSCode CLI (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          # Install VSCode CLI for testing
+          brew install --cask visual-studio-code
+
+      - name: Setup VSCode CLI (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          # Install VSCode CLI for testing
+          choco install vscode
+
+      - name: Download VSIX package
+        uses: actions/download-artifact@v3
+        with:
+          name: vsix-${{ matrix.vsix-type }}
+          path: ./test-vsix
+
+      - name: Run VSIX installation tests
+        shell: bash
+        run: |
+          echo "🧪 Running VSIX installation tests on ${{ matrix.os }}..."
+          
+          # Make test script executable
+          chmod +x scripts/test-vsix-install.sh
+          
+          # Find VSIX file
+          VSIX_FILE=$(find ./test-vsix -name "*.vsix" -type f | head -n 1)
+          
+          if [ -z "$VSIX_FILE" ]; then
+            echo "❌ No VSIX file found for testing!"
+            exit 1
+          fi
+          
+          echo "Testing VSIX: $(basename "$VSIX_FILE")"
+          
+          # Run installation tests
+          ./scripts/test-vsix-install.sh --vsix-path "$VSIX_FILE"
+
+      - name: Run VSIX functional tests
+        shell: bash
+        run: |
+          echo "🔧 Running VSIX functional tests..."
+          
+          # Create reports directory
+          mkdir -p reports/vsix
+          
+          # Run Jest tests for VSIX
+          npx jest test/vsix --config=test/vsix/jest.config.js --verbose
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: vsix-test-results-${{ matrix.os }}-${{ matrix.vsix-type }}
+          path: |
+            reports/vsix/
+            test-results/
+          retention-days: 7
+
+  # VSIX cross-platform validation
+  vsix-validation:
+    name: Cross-Platform VSIX Validation
+    runs-on: ubuntu-latest
+    needs: vsix-test
+    if: always() && (needs.vsix-test.result == 'success' || needs.vsix-test.result == 'failure')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all VSIX test results
+        uses: actions/download-artifact@v3
+        with:
+          path: ./all-test-results
+
+      - name: Generate cross-platform report
+        run: |
+          echo "📋 Generating cross-platform validation report..."
+          
+          echo "# VSIX Cross-Platform Validation Report" > cross-platform-report.md
+          echo "" >> cross-platform-report.md
+          echo "**Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> cross-platform-report.md
+          echo "**Workflow:** ${{ github.workflow }}" >> cross-platform-report.md
+          echo "**Run ID:** ${{ github.run_id }}" >> cross-platform-report.md
+          echo "" >> cross-platform-report.md
+          
+          echo "## Test Results Summary" >> cross-platform-report.md
+          echo "" >> cross-platform-report.md
+          
+          # Analyze test results from each platform
+          for result_dir in ./all-test-results/vsix-test-results-*; do
+            if [ -d "$result_dir" ]; then
+              platform=$(basename "$result_dir" | sed 's/vsix-test-results-//')
+              echo "### $platform" >> cross-platform-report.md
+              
+              if [ -f "$result_dir/reports/vsix/vsix-test-report-"*.md ]; then
+                echo "✅ Tests completed" >> cross-platform-report.md
+                # Extract key metrics if available
+                TEST_REPORT=$(find "$result_dir" -name "vsix-test-report-*.md" | head -n 1)
+                if [ -f "$TEST_REPORT" ]; then
+                  grep -E "(Total Tests|Passed|Failed|Success Rate)" "$TEST_REPORT" >> cross-platform-report.md || true
+                fi
+              else
+                echo "❌ No test report found" >> cross-platform-report.md
+              fi
+              echo "" >> cross-platform-report.md
+            fi
+          done
+          
+          echo "## Recommendations" >> cross-platform-report.md
+          echo "" >> cross-platform-report.md
+          echo "- Review any failed tests above" >> cross-platform-report.md
+          echo "- Ensure VSIX package works across all target platforms" >> cross-platform-report.md
+          echo "- Consider platform-specific testing if issues persist" >> cross-platform-report.md
+
+      - name: Upload cross-platform report
+        uses: actions/upload-artifact@v3
+        with:
+          name: cross-platform-validation-report
+          path: cross-platform-report.md
+          retention-days: 30
+
+      - name: Comment validation results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            if (fs.existsSync('cross-platform-report.md')) {
+              const report = fs.readFileSync('cross-platform-report.md', 'utf8');
+              
+              const comment = `## 🔍 VSIX Cross-Platform Validation\n\n${report}\n\n---\n*This validation report was automatically generated.*`;
+              
+              // Find existing comment to update
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              
+              const existingComment = comments.find(c => 
+                c.user.login === 'github-actions[bot]' && 
+                c.body.includes('VSIX Cross-Platform Validation')
+              );
+              
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: comment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: comment
+                });
+              }
+            }

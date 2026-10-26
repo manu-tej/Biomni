@@ -36,21 +36,21 @@ export interface CacheConfig {
   // Size limits
   maxEntries: number;
   maxSize: number; // in bytes
-  
+
   // Time-based expiration
   defaultTtl: number; // milliseconds
   maxTtl: number;
-  
+
   // Performance-based policies
   enablePerformanceAdaptation: boolean;
   performanceThresholdMs: number;
   memoryThresholdBytes: number;
-  
+
   // Eviction policies
   enableLRU: boolean;
   enableTTL: boolean;
   enableSizeBased: boolean;
-  
+
   // Categories with different policies
   categoryConfigs: Record<string, Partial<CacheConfig>>;
 }
@@ -60,11 +60,11 @@ export interface CacheConfig {
  */
 export enum CacheCategory {
   API_RESPONSES = 'api_responses',
-  TOOL_DEFINITIONS = 'tool_definitions', 
+  TOOL_DEFINITIONS = 'tool_definitions',
   USER_PREFERENCES = 'user_preferences',
   COMMAND_RESULTS = 'command_results',
   FILE_CONTENT = 'file_content',
-  ANALYSIS_RESULTS = 'analysis_results'
+  ANALYSIS_RESULTS = 'analysis_results',
 }
 
 /**
@@ -78,7 +78,7 @@ export class CacheManagerService {
   private config: CacheConfig;
   private cleanupInterval: NodeJS.Timeout | undefined;
   private adaptationInterval: NodeJS.Timeout | undefined;
-  
+
   private readonly DEFAULT_CONFIG: CacheConfig = {
     maxEntries: 1000,
     maxSize: 50 * 1024 * 1024, // 50MB
@@ -93,29 +93,29 @@ export class CacheManagerService {
     categoryConfigs: {
       [CacheCategory.API_RESPONSES]: {
         defaultTtl: 10 * 60 * 1000, // 10 minutes for API responses
-        maxTtl: 30 * 60 * 1000 // 30 minutes max
+        maxTtl: 30 * 60 * 1000, // 30 minutes max
       },
       [CacheCategory.TOOL_DEFINITIONS]: {
         defaultTtl: 60 * 60 * 1000, // 1 hour for tool definitions
-        maxTtl: 24 * 60 * 60 * 1000 // 24 hours max
+        maxTtl: 24 * 60 * 60 * 1000, // 24 hours max
       },
       [CacheCategory.USER_PREFERENCES]: {
         defaultTtl: 24 * 60 * 60 * 1000, // 24 hours for user prefs
-        maxTtl: 7 * 24 * 60 * 60 * 1000 // 7 days max
+        maxTtl: 7 * 24 * 60 * 60 * 1000, // 7 days max
       },
       [CacheCategory.COMMAND_RESULTS]: {
         defaultTtl: 2 * 60 * 1000, // 2 minutes for command results
-        maxTtl: 10 * 60 * 1000 // 10 minutes max
+        maxTtl: 10 * 60 * 1000, // 10 minutes max
       },
       [CacheCategory.FILE_CONTENT]: {
         defaultTtl: 30 * 1000, // 30 seconds for file content
-        maxTtl: 5 * 60 * 1000 // 5 minutes max
+        maxTtl: 5 * 60 * 1000, // 5 minutes max
       },
       [CacheCategory.ANALYSIS_RESULTS]: {
         defaultTtl: 15 * 60 * 1000, // 15 minutes for analysis results
-        maxTtl: 60 * 60 * 1000 // 1 hour max
-      }
-    }
+        maxTtl: 60 * 60 * 1000, // 1 hour max
+      },
+    },
   };
 
   private constructor(config?: Partial<CacheConfig>) {
@@ -124,12 +124,12 @@ export class CacheManagerService {
     this.stats = this.initializeStats();
     this.startCleanupRoutine();
     this.startPerformanceAdaptation();
-    
+
     console.log('CacheManagerService initialized with config:', {
       maxEntries: this.config.maxEntries,
       maxSize: Math.round(this.config.maxSize / (1024 * 1024)) + 'MB',
       defaultTtl: this.config.defaultTtl + 'ms',
-      performanceAdaptation: this.config.enablePerformanceAdaptation
+      performanceAdaptation: this.config.enablePerformanceAdaptation,
     });
   }
 
@@ -153,7 +153,7 @@ export class CacheManagerService {
       hitRate: 0,
       memoryUsage: 0,
       oldestEntry: Date.now(),
-      newestEntry: Date.now()
+      newestEntry: Date.now(),
     };
   }
 
@@ -189,7 +189,9 @@ export class CacheManagerService {
    * Check if entry has expired
    */
   private isExpired(entry: CacheEntry): boolean {
-    if (!this.config.enableTTL) return false;
+    if (!this.config.enableTTL) {
+      return false;
+    }
     return Date.now() - entry.timestamp > entry.ttl;
   }
 
@@ -211,38 +213,38 @@ export class CacheManagerService {
 
     const metrics = this.performanceMonitor.getMetrics();
     const categoryConfig = this.getCategoryConfig(category);
-    
+
     // Check API performance for API responses
     if (category === CacheCategory.API_RESPONSES) {
       const apiTimes = metrics.apiResponseTimes[baseKey] || [];
       if (apiTimes.length > 0) {
         const avgResponseTime = apiTimes.reduce((a, b) => a + b, 0) / apiTimes.length;
-        
+
         // Longer TTL for slower APIs to reduce calls
         if (avgResponseTime > this.config.performanceThresholdMs) {
           return Math.min(categoryConfig.defaultTtl * 2, categoryConfig.maxTtl);
         }
       }
     }
-    
+
     // Check command performance for command results
     if (category === CacheCategory.COMMAND_RESULTS) {
       const commandTimes = metrics.commandExecutionTimes[baseKey] || [];
       if (commandTimes.length > 0) {
         const avgCommandTime = commandTimes.reduce((a, b) => a + b, 0) / commandTimes.length;
-        
+
         // Longer TTL for slower commands
         if (avgCommandTime > this.config.performanceThresholdMs) {
           return Math.min(categoryConfig.defaultTtl * 1.5, categoryConfig.maxTtl);
         }
       }
     }
-    
+
     // Check memory pressure - shorter TTL if memory is high
     if (metrics.memoryUsage > this.config.memoryThresholdBytes) {
       return Math.max(categoryConfig.defaultTtl * 0.5, 30000); // Min 30 seconds
     }
-    
+
     return categoryConfig.defaultTtl;
   }
 
@@ -250,9 +252,9 @@ export class CacheManagerService {
    * Evict entries based on various policies
    */
   private evictEntries(): void {
-    const currentTime = Date.now();
+    // const currentTime = Date.now();
     const entries = Array.from(this.cache.entries());
-    
+
     // Remove expired entries first
     if (this.config.enableTTL) {
       for (const [key, entry] of entries) {
@@ -264,34 +266,38 @@ export class CacheManagerService {
         }
       }
     }
-    
+
     // Check if we still need to evict more entries
-    const needsEviction = this.cache.size > this.config.maxEntries || 
-                         this.stats.totalSize > this.config.maxSize;
-    
-    if (!needsEviction) return;
-    
+    const needsEviction =
+      this.cache.size > this.config.maxEntries || this.stats.totalSize > this.config.maxSize;
+
+    if (!needsEviction) {
+      return;
+    }
+
     // Sort by LRU and access frequency for smart eviction
     const sortedEntries = Array.from(this.cache.entries())
       .map(([key, entry]) => ({ key, entry }))
       .sort((a, b) => {
         if (this.config.enableLRU) {
           // Prioritize by last accessed time and access count
-          const aScore = a.entry.lastAccessed + (a.entry.accessCount * 60000);
-          const bScore = b.entry.lastAccessed + (b.entry.accessCount * 60000);
+          const aScore = a.entry.lastAccessed + a.entry.accessCount * 60000;
+          const bScore = b.entry.lastAccessed + b.entry.accessCount * 60000;
           return aScore - bScore;
         }
         return a.entry.timestamp - b.entry.timestamp;
       });
-    
+
     // Evict least valuable entries
     const targetEvictions = Math.max(
       this.cache.size - this.config.maxEntries,
       Math.ceil(this.cache.size * 0.1) // Evict at least 10%
     );
-    
+
     for (let i = 0; i < targetEvictions && sortedEntries.length > 0; i++) {
-      const { key, entry } = sortedEntries[i];
+      const item = sortedEntries[i];
+      if (!item) continue;
+      const { key, entry } = item;
       this.cache.delete(key);
       this.stats.evictionCount++;
       this.stats.totalSize -= entry.size;
@@ -304,12 +310,13 @@ export class CacheManagerService {
    */
   private updateStats(): void {
     const entries = Array.from(this.cache.values());
-    
+
     this.stats.totalEntries = entries.length;
     this.stats.totalSize = entries.reduce((sum, entry) => sum + entry.size, 0);
-    this.stats.hitRate = this.stats.hitCount / Math.max(1, this.stats.hitCount + this.stats.missCount);
+    this.stats.hitRate =
+      this.stats.hitCount / Math.max(1, this.stats.hitCount + this.stats.missCount);
     this.stats.memoryUsage = this.stats.totalSize;
-    
+
     if (entries.length > 0) {
       this.stats.oldestEntry = Math.min(...entries.map(e => e.timestamp));
       this.stats.newestEntry = Math.max(...entries.map(e => e.timestamp));
@@ -321,29 +328,37 @@ export class CacheManagerService {
    */
   private startCleanupRoutine(): void {
     // Run cleanup every 2 minutes
-    this.cleanupInterval = setInterval(() => {
-      this.evictEntries();
-      this.updateStats();
-      
-      console.log('Cache cleanup completed:', {
-        entries: this.stats.totalEntries,
-        size: Math.round(this.stats.totalSize / 1024) + 'KB',
-        hitRate: Math.round(this.stats.hitRate * 100) + '%',
-        evictions: this.stats.evictionCount
-      });
-    }, 2 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.evictEntries();
+        this.updateStats();
+
+        console.log('Cache cleanup completed:', {
+          entries: this.stats.totalEntries,
+          size: Math.round(this.stats.totalSize / 1024) + 'KB',
+          hitRate: Math.round(this.stats.hitRate * 100) + '%',
+          evictions: this.stats.evictionCount,
+        });
+      },
+      2 * 60 * 1000
+    );
   }
 
   /**
    * Start performance adaptation routine
    */
   private startPerformanceAdaptation(): void {
-    if (!this.config.enablePerformanceAdaptation) return;
-    
+    if (!this.config.enablePerformanceAdaptation) {
+      return;
+    }
+
     // Adapt cache policies every 5 minutes
-    this.adaptationInterval = setInterval(() => {
-      this.adaptCachePolicies();
-    }, 5 * 60 * 1000);
+    this.adaptationInterval = setInterval(
+      () => {
+        this.adaptCachePolicies();
+      },
+      5 * 60 * 1000
+    );
   }
 
   /**
@@ -351,34 +366,37 @@ export class CacheManagerService {
    */
   private adaptCachePolicies(): void {
     const performanceReport = this.performanceMonitor.generateReport();
-    
+
     // Adjust TTL based on performance recommendations
-    const hasSlowApiCalls = performanceReport.recommendations.some(rec => 
+    const hasSlowApiCalls = performanceReport.recommendations.some(rec =>
       rec.includes('slow API calls')
     );
-    
-    const hasMemoryPressure = performanceReport.degradationWarnings.some(warning => 
+
+    const hasMemoryPressure = performanceReport.degradationWarnings.some(warning =>
       warning.includes('Memory usage')
     );
-    
+
     if (hasSlowApiCalls) {
       // Increase default TTL for API responses
       const apiConfig = this.config.categoryConfigs[CacheCategory.API_RESPONSES];
       if (apiConfig && apiConfig.defaultTtl) {
-        apiConfig.defaultTtl = Math.min(apiConfig.defaultTtl * 1.2, apiConfig.maxTtl || this.config.maxTtl);
+        apiConfig.defaultTtl = Math.min(
+          apiConfig.defaultTtl * 1.2,
+          apiConfig.maxTtl || this.config.maxTtl
+        );
         console.log('Adapted API cache TTL due to slow responses:', apiConfig.defaultTtl);
       }
     }
-    
+
     if (hasMemoryPressure) {
       // Reduce cache size limits
       this.config.maxSize = Math.max(this.config.maxSize * 0.8, 10 * 1024 * 1024); // Min 10MB
       this.config.maxEntries = Math.max(Math.floor(this.config.maxEntries * 0.8), 100); // Min 100 entries
       console.log('Adapted cache size due to memory pressure:', {
         maxSize: Math.round(this.config.maxSize / (1024 * 1024)) + 'MB',
-        maxEntries: this.config.maxEntries
+        maxEntries: this.config.maxEntries,
       });
-      
+
       // Force cleanup
       this.evictEntries();
     }
@@ -388,21 +406,22 @@ export class CacheManagerService {
    * Store value in cache with intelligent policies
    */
   public async set<T>(
-    category: CacheCategory, 
-    key: string, 
-    value: T, 
+    category: CacheCategory,
+    key: string,
+    value: T,
     customTtl?: number
   ): Promise<void> {
     const cacheKey = this.generateKey(category, key);
     const size = this.calculateSize(value);
     const ttl = customTtl || this.getAdaptiveTtl(category, key);
-    
+
     // Check if value is too large for cache
-    if (size > this.config.maxSize * 0.1) { // Don't cache items > 10% of max size
+    if (size > this.config.maxSize * 0.1) {
+      // Don't cache items > 10% of max size
       console.warn(`Cache item too large, skipping: ${cacheKey} (${Math.round(size / 1024)}KB)`);
       return;
     }
-    
+
     const entry: CacheEntry<T> = {
       value,
       timestamp: Date.now(),
@@ -410,26 +429,28 @@ export class CacheManagerService {
       accessCount: 0,
       lastAccessed: Date.now(),
       size,
-      key: cacheKey
+      key: cacheKey,
     };
-    
+
     // Remove existing entry if present
     if (this.cache.has(cacheKey)) {
       const oldEntry = this.cache.get(cacheKey)!;
       this.stats.totalSize -= oldEntry.size;
       this.stats.totalEntries--;
     }
-    
+
     this.cache.set(cacheKey, entry);
     this.stats.totalSize += size;
     this.stats.totalEntries++;
-    
+
     // Trigger eviction if needed
     if (this.cache.size > this.config.maxEntries || this.stats.totalSize > this.config.maxSize) {
       this.evictEntries();
     }
-    
-    console.log(`Cached: ${cacheKey} (TTL: ${Math.round(ttl / 1000)}s, Size: ${Math.round(size / 1024)}KB)`);
+
+    console.log(
+      `Cached: ${cacheKey} (TTL: ${Math.round(ttl / 1000)}s, Size: ${Math.round(size / 1024)}KB)`
+    );
   }
 
   /**
@@ -438,13 +459,13 @@ export class CacheManagerService {
   public async get<T>(category: CacheCategory, key: string): Promise<T | null> {
     const cacheKey = this.generateKey(category, key);
     const entry = this.cache.get(cacheKey) as CacheEntry<T> | undefined;
-    
+
     if (!entry) {
       this.stats.missCount++;
       console.log(`Cache miss: ${cacheKey}`);
       return null;
     }
-    
+
     if (this.isExpired(entry)) {
       this.cache.delete(cacheKey);
       this.stats.missCount++;
@@ -454,11 +475,11 @@ export class CacheManagerService {
       console.log(`Cache expired: ${cacheKey}`);
       return null;
     }
-    
+
     this.updateAccess(entry);
     this.stats.hitCount++;
     console.log(`Cache hit: ${cacheKey} (accessed ${entry.accessCount} times)`);
-    
+
     return entry.value;
   }
 
@@ -468,9 +489,11 @@ export class CacheManagerService {
   public async has(category: CacheCategory, key: string): Promise<boolean> {
     const cacheKey = this.generateKey(category, key);
     const entry = this.cache.get(cacheKey);
-    
-    if (!entry) return false;
-    
+
+    if (!entry) {
+      return false;
+    }
+
     if (this.isExpired(entry)) {
       this.cache.delete(cacheKey);
       this.stats.evictionCount++;
@@ -478,7 +501,7 @@ export class CacheManagerService {
       this.stats.totalEntries--;
       return false;
     }
-    
+
     return true;
   }
 
@@ -488,14 +511,16 @@ export class CacheManagerService {
   public async delete(category: CacheCategory, key: string): Promise<boolean> {
     const cacheKey = this.generateKey(category, key);
     const entry = this.cache.get(cacheKey);
-    
-    if (!entry) return false;
-    
+
+    if (!entry) {
+      return false;
+    }
+
     this.cache.delete(cacheKey);
     this.stats.totalSize -= entry.size;
     this.stats.totalEntries--;
     this.stats.evictionCount++;
-    
+
     console.log(`Cache deleted: ${cacheKey}`);
     return true;
   }
@@ -507,7 +532,7 @@ export class CacheManagerService {
     if (category) {
       const prefix = `${category}:`;
       const keysToDelete = Array.from(this.cache.keys()).filter(key => key.startsWith(prefix));
-      
+
       for (const key of keysToDelete) {
         const entry = this.cache.get(key)!;
         this.cache.delete(key);
@@ -515,7 +540,7 @@ export class CacheManagerService {
         this.stats.totalEntries--;
         this.stats.evictionCount++;
       }
-      
+
       console.log(`Cleared cache category: ${category} (${keysToDelete.length} entries)`);
     } else {
       const entryCount = this.cache.size;
@@ -545,7 +570,7 @@ export class CacheManagerService {
    */
   public updateConfig(newConfig: Partial<CacheConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    
+
     // Restart adaptation if needed
     if (newConfig.enablePerformanceAdaptation !== undefined) {
       if (this.adaptationInterval) {
@@ -553,7 +578,7 @@ export class CacheManagerService {
       }
       this.startPerformanceAdaptation();
     }
-    
+
     console.log('Cache configuration updated:', newConfig);
   }
 
@@ -562,12 +587,12 @@ export class CacheManagerService {
    */
   public getEntries(category?: CacheCategory): Array<{ key: string; entry: CacheEntry }> {
     const entries = Array.from(this.cache.entries()).map(([key, entry]) => ({ key, entry }));
-    
+
     if (category) {
       const prefix = `${category}:`;
       return entries.filter(({ key }) => key.startsWith(prefix));
     }
-    
+
     return entries;
   }
 
@@ -576,7 +601,7 @@ export class CacheManagerService {
    */
   public async showDashboard(): Promise<void> {
     const stats = this.getStats();
-    
+
     const dashboardContent = [
       '=== CACHE MANAGER DASHBOARD ===',
       '',
@@ -596,21 +621,23 @@ export class CacheManagerService {
       '',
       '🗂️ CACHE CATEGORIES:',
     ];
-    
+
     // Add category statistics
     for (const category of Object.values(CacheCategory)) {
       const categoryEntries = this.getEntries(category);
       const categorySize = categoryEntries.reduce((sum, { entry }) => sum + entry.size, 0);
-      dashboardContent.push(`  • ${category}: ${categoryEntries.length} entries (${Math.round(categorySize / 1024)}KB)`);
+      dashboardContent.push(
+        `  • ${category}: ${categoryEntries.length} entries (${Math.round(categorySize / 1024)}KB)`
+      );
     }
-    
+
     dashboardContent.push('');
     dashboardContent.push(`Last Update: ${new Date().toLocaleString()}`);
-    
+
     const message = dashboardContent.join('\n');
     await vscode.window.showInformationMessage('Cache Dashboard', {
       modal: true,
-      detail: message
+      detail: message,
     });
   }
 
@@ -622,12 +649,12 @@ export class CacheManagerService {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = undefined;
     }
-    
+
     if (this.adaptationInterval) {
       clearInterval(this.adaptationInterval);
       this.adaptationInterval = undefined;
     }
-    
+
     this.cache.clear();
     console.log('CacheManagerService disposed');
   }

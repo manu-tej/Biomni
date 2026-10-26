@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-09-08T20:38:52.225Z",
+  "timestamp": "2025-09-11T19:50:25.202Z",
   "summary": {
-    "totalSize": 613928,
-    "gzippedSize": 145113,
-    "fileCount": 4,
+    "totalSize": 2879740,
+    "gzippedSize": 306265,
+    "fileCount": 6,
     "moduleCount": 0
   },
   "files": {
@@ -11,25 +11,37 @@
       "size": 25713,
       "gzippedSize": 5406,
       "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js",
-      "percentage": 4.188276149646213
+      "percentage": 0.8928931084056199
     },
     "453.extension.js.map": {
       "size": 29363,
       "gzippedSize": 6593,
       "path": "/Users/manuarrojwala/epic-vscode-extension/dist/453.extension.js.map",
-      "percentage": 4.7828084075005535
+      "percentage": 1.0196406620042087
+    },
+    "bundle-analysis.html": {
+      "size": 281439,
+      "gzippedSize": 92805,
+      "path": "/Users/manuarrojwala/epic-vscode-extension/dist/bundle-analysis.html",
+      "percentage": 9.7730697910228
     },
     "extension.js": {
-      "size": 130758,
-      "gzippedSize": 33068,
+      "size": 155835,
+      "gzippedSize": 39420,
       "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js",
-      "percentage": 21.298588759593958
+      "percentage": 5.411426031516734
     },
     "extension.js.map": {
-      "size": 428094,
-      "gzippedSize": 100046,
+      "size": 523556,
+      "gzippedSize": 122709,
       "path": "/Users/manuarrojwala/epic-vscode-extension/dist/extension.js.map",
-      "percentage": 69.73032668325926
+      "percentage": 18.180669088181574
+    },
+    "stats.json": {
+      "size": 1863834,
+      "gzippedSize": 39332,
+      "path": "/Users/manuarrojwala/epic-vscode-extension/dist/stats.json",
+      "percentage": 64.72230131886907
     }
   },
   "modules": [],
